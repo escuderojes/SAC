@@ -54,7 +54,8 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
     procedimiento: '',
     norma: '',
     clausula: '8.7.1 / 10.2',
-    originador: '',
+    originadorTipo: 'Dirección de la Calidad',
+    originadorOtro: '',
     respArea: '',
     respAreaCorreo: '',
     fecha: currentPeDate(),
@@ -112,7 +113,7 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
     procedimiento: form.procedimiento,
     norma: form.norma,
     clausula: form.clausula,
-    originador: form.originador,
+    originador: form.originadorTipo === 'Otro' ? form.originadorOtro : 'Dirección de la Calidad',
     responsable: form.respArea,
     responsableEmail: form.respAreaCorreo,
     fechaReg: form.fecha,
@@ -195,7 +196,22 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
             <window.DateField value={form.fecha} onChange={v => setField('fecha', v)} />
           </Field>
           <Field label="Originador">
-            <window.ResponsableCombo value={form.originador} onChange={v => setField('originador', v)} placeholder="Buscar originador..." />
+            <div className="radio-grid" style={{gridTemplateColumns: '1fr', gap: 8}}>
+              {['Dirección de la Calidad', 'Otro'].map(opt => (
+                <div key={opt}
+                     className={'radio-card' + (form.originadorTipo === opt ? ' on' : '')}
+                     onClick={() => setField('originadorTipo', opt)}>
+                  <span className="bullet"></span>
+                  <span className="lab">{opt}</span>
+                </div>
+              ))}
+            </div>
+            {form.originadorTipo === 'Otro' && (
+              <input className="input-line"
+                     value={form.originadorOtro}
+                     onChange={e => setField('originadorOtro', e.target.value)}
+                     placeholder="Escriba quien crea la SAC" />
+            )}
           </Field>
           <Field label="Responsable del area" error={errors.responsable}>
             <div className="readonly-stack">
