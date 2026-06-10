@@ -49,17 +49,17 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
   const [form, setForm] = React.useState({
     codigo: '',
     campus: 'UCV — Campus Lima Norte',
-    area: window.AREAS_RESPONSABLES?.[0]?.area || 'ADMINISTRACION DE EMPRESAS',
-    procesoSGC: 'ENSEÑANZA - APRENDIZAJE',
+    area: '',
+    procesoSGC: '',
     procedimiento: '',
-    norma: 'ISO 9001:2015',
+    norma: '',
     clausula: '8.7.1 / 10.2',
-    originador: 'M. Quispe Hurtado — Coord. de Calidad',
-    respArea: window.AREAS_RESPONSABLES?.[0]?.responsable || '',
-    respAreaCorreo: window.AREAS_RESPONSABLES?.[0]?.correo || '',
+    originador: '',
+    respArea: '',
+    respAreaCorreo: '',
     fecha: currentPeDate(),
-    fuente: 'Auditoria interna',
-    prioridad: 'Alta',
+    fuente: '',
+    prioridad: '',
     respInm: 'No aplica',
     fechaInm: '',
     nc: '',
@@ -169,10 +169,10 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
             <Select value={form.campus} options={['UCV — Campus Lima Norte', 'UCV — Campus Lima Centro', 'UCV — Campus Trujillo', 'UCV — Campus Chiclayo', 'UCV — Campus Piura']} onChange={v => setField('campus', v)} icon="building" />
           </Field>
           <Field label="Area o programa" required error={errors.area}>
-            <Select value={form.area} options={window.AREAS_LIST} onChange={v => setField('area', v)} icon="folder" />
+            <Select value={form.area} placeholder="Seleccionar area o programa" options={window.AREAS_LIST} onChange={v => setField('area', v)} icon="folder" />
           </Field>
           <Field label="Proceso del SGC" required error={errors.procesoSGC}>
-            <Select value={form.procesoSGC} options={window.PROCESOS_SGC_LIST} onChange={v => setField('procesoSGC', v)} icon="shield" />
+            <Select value={form.procesoSGC} placeholder="Seleccionar proceso" options={window.PROCESOS_SGC_LIST} onChange={v => setField('procesoSGC', v)} icon="shield" />
           </Field>
           <Field label="Procedimiento">
             <window.Combobox
@@ -186,7 +186,7 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
             />
           </Field>
           <Field label="Norma asociada">
-            <Select value={form.norma} options={['ISO 9001:2015', 'ISO 21001:2018', 'Binorma ISO 9001:2015 / ISO 21001:2018', 'ISO 45001:2018']} onChange={v => setField('norma', v)} icon="shield" />
+            <Select value={form.norma} placeholder="Seleccionar norma" options={['ISO 9001:2015', 'ISO 21001:2018', 'Binorma ISO 9001:2015 / ISO 21001:2018', 'ISO 45001:2018']} onChange={v => setField('norma', v)} icon="shield" />
           </Field>
           <Field label="Clausula / requisito">
             <input className="input-line" value={form.clausula} onChange={e => setField('clausula', e.target.value)} placeholder="Ej. 8.7.1 / 10.2" />
@@ -210,7 +210,7 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
             </div>
           </Field>
           <Field label="Prioridad">
-            <Select value={form.prioridad} options={['Alta', 'Media', 'Baja']} onChange={v => setField('prioridad', v)} icon="flag" />
+            <Select value={form.prioridad} placeholder="Seleccionar prioridad" options={['Alta', 'Media', 'Baja']} onChange={v => setField('prioridad', v)} icon="flag" />
           </Field>
           <Field label="Fuente de no conformidad" required span="3" error={errors.fuente}>
             <div className="radio-grid">
