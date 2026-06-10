@@ -1,9 +1,10 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import { createPortal } from 'react-dom';
 import '../styles.css';
 
 window.React = React;
-window.ReactDOM = { createRoot };
+window.ReactDOM = { createRoot, createPortal };
 window.SAC_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const init = async () => {
