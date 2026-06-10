@@ -31,6 +31,8 @@ const Icon = ({ name, size = 16, stroke = 1.75, ...p }) => {
     case 'paperclip': return <svg {...common}><path d="m21 10-9 9a5 5 0 1 1-7-7l9-9a3.5 3.5 0 1 1 5 5L10 17a2 2 0 0 1-3-3l8-8"/></svg>;
     case 'msg': return <svg {...common}><path d="M21 12a8 8 0 1 1-3.6-6.7L21 4l-1 4.2A8 8 0 0 1 21 12z"/></svg>;
     case 'eye': return <svg {...common}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg>;
+    case 'eye-off': return <svg {...common}><path d="M2 12s3.5-7 10-7c2 0 3.8.6 5.3 1.6"/><path d="M21.5 9.8c.3.4.5.7.5.7s-3.5 7-10 7c-1.3 0-2.5-.3-3.6-.7"/><path d="M9.5 9.5a3 3 0 0 0 4 4"/><path d="M3 3l18 18"/></svg>;
+    case 'lock': return <svg {...common}><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>;
     case 'edit': return <svg {...common}><path d="M11 4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-6"/><path d="m18 2 4 4-11 11H7v-4z"/></svg>;
     case 'history': return <svg {...common}><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 8v4l3 2"/></svg>;
     case 'more': return <svg {...common}><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg>;

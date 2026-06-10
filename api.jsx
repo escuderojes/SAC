@@ -28,7 +28,10 @@ const apiErrorMessage = (payload) => {
 };
 
 const request = async (path, options = {}) => {
-  const response = await fetch(`${API_BASE}${path}`, options);
+  const token = window.localStorage?.getItem('sac_token');
+  const headers = { ...(options.headers || {}) };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
   const contentType = response.headers.get('content-type') || '';
 
   if (!response.ok) {
@@ -79,6 +82,12 @@ const api = {
   },
   exportSac(id) {
     return request(`/api/sac/${encodeURIComponent(id)}/export`, { blob: true });
+  },
+  login(email, password) {
+    return request('/api/auth/login', jsonOptions('POST', { email, password }));
+  },
+  me() {
+    return request('/api/auth/me');
   },
 };
 

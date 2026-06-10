@@ -21,6 +21,9 @@ const App = () => {
     setSelectedId,
     selectedSac,
     loadSacs,
+    token,
+    user,
+    logout,
   } = window.useAppContext();
   const [tweaks, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
   const [active, setActive] = React.useState('monitoreo');
@@ -35,8 +38,8 @@ const App = () => {
   }, [tweaks.density]);
 
   React.useEffect(() => {
-    loadSacs(filters).catch(() => {});
-  }, []);
+    if (token) loadSacs(filters).catch(() => {});
+  }, [token]);
 
   React.useEffect(() => {
     if (active === 'registro') setSelectedId(null);
@@ -45,12 +48,18 @@ const App = () => {
   const isRegistro = active === 'registro';
   const selected = active === 'monitoreo' ? selectedSac : null;
 
+  if (!token) {
+    return <LoginPage />;
+  }
+
   return (
     <div className="app">
       <Sidebar active={active} setActive={setActive} />
       <div className="main">
         <Header
           campus={filters.campus}
+          user={user}
+          onLogout={logout}
           title={isRegistro ? 'Nueva Solicitud de Accion Correctiva' : 'Monitoreo de Acciones Correctivas'}
           subtitle={isRegistro ? 'Registro inicial de no conformidad y planificacion de acciones'
                                 : 'Gestion, seguimiento y cierre de solicitudes SAC'}

@@ -34,7 +34,7 @@ const Sidebar = ({ active, setActive }) => {
   );
 };
 
-const Header = ({ campus, title, subtitle, crumb }) => (
+const Header = ({ campus, title, subtitle, crumb, user, onLogout }) => (
   <div className="header">
     <div>
       <div className="crumbs">{crumb || 'Calidad / Acciones correctivas'}</div>
@@ -54,12 +54,14 @@ const Header = ({ campus, title, subtitle, crumb }) => (
         <Icon name="help" size={17} />
       </button>
       <div className="user-chip">
-        <div className="av">MQ</div>
+        <div className="av">{(user?.nombre || 'MQ').split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase()}</div>
         <div>
-          <div className="nm">M. Quispe Hurtado</div>
-          <div className="rl">Coord. de Calidad</div>
+          <div className="nm">{user?.nombre || 'M. Quispe Hurtado'}</div>
+          <div className="rl">{user?.rol || 'Coord. de Calidad'}</div>
         </div>
-        <Icon name="chev-down" size={14} />
+        <button className="logout-mini" onClick={onLogout} title="Cerrar sesion">
+          <Icon name="x" size={13} />
+        </button>
       </div>
     </div>
   </div>

@@ -26,6 +26,14 @@ const normalizeStats = (payload) => payload || {};
 const getErrorText = (err) => err?.message || 'Error de red. Verifique que el backend este disponible.';
 
 const AppProvider = ({ children }) => {
+  const [token, setToken] = React.useState(() => window.localStorage?.getItem('sac_token') || '');
+  const [user, setUser] = React.useState(() => {
+    try {
+      return JSON.parse(window.localStorage?.getItem('sac_user') || 'null');
+    } catch (err) {
+      return null;
+    }
+  });
   const [sacs, setSacs] = React.useState([]);
   const [stats, setStats] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
@@ -145,8 +153,30 @@ const AppProvider = ({ children }) => {
     }
   }, []);
 
+  const login = React.useCallback(async (email, password) => {
+    setError('');
+    const payload = await window.SacApi.login(email, password);
+    setToken(payload.access_token);
+    setUser(payload.user);
+    window.localStorage?.setItem('sac_token', payload.access_token);
+    window.localStorage?.setItem('sac_user', JSON.stringify(payload.user));
+    return payload.user;
+  }, []);
+
+  const logout = React.useCallback(() => {
+    setToken('');
+    setUser(null);
+    setSelectedId(null);
+    setSelectedSac(null);
+    setSacs([]);
+    window.localStorage?.removeItem('sac_token');
+    window.localStorage?.removeItem('sac_user');
+  }, []);
+
   const value = {
     sacs,
+    token,
+    user,
     stats,
     loading,
     statsLoading,
@@ -166,6 +196,8 @@ const AppProvider = ({ children }) => {
     createSac,
     updateSac,
     exportSac,
+    login,
+    logout,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

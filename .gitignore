@@ -15,6 +15,7 @@ sac-backend/.env
 .DS_Store
 Thumbs.db
 .vscode/
+_login_import/
 
 # Logs
 *.log

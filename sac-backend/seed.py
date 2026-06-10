@@ -16,8 +16,6 @@ def d(days_delta: int) -> date:
 
 USERS = [
     {"nombre": "M. Quispe Hurtado", "email": "mquispe@ucv.edu.pe", "rol": "coordinador", "campus": "LN"},
-    {"nombre": "Responsable SAC", "email": "responsable@ucv.edu.pe", "rol": "responsable", "campus": "LN"},
-    {"nombre": "Auditor SAC", "email": "auditor@ucv.edu.pe", "rol": "auditor", "campus": "LN"},
 ]
 
 SACS = [
