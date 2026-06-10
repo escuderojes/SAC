@@ -48,6 +48,14 @@ FUENTES = [
     "Otras fuentes",
 ]
 
+AREAS_RESPONSABLES = [
+    {"tipo": "programa", "area": "ADMINISTRACION DE EMPRESAS", "responsable": "Carlos Alberto Delgado Cespedes", "cargo": "Coordinador", "correo": "cdelgadoc@ucv.edu.pe", "correo_area": "epadministracion.ln@ucv.edu.pe"},
+    {"tipo": "programa", "area": "ARTE & DISEÑO GRAFICO EMPRESARIAL", "responsable": "Karla Robalino Sanchez", "cargo": "Coordinador", "correo": "krobalino@ucv.edu.pe", "correo_area": "eparteydisenografico.ln@ucv.edu.pe"},
+    {"tipo": "programa", "area": "INGENIERIA DE SISTEMAS", "responsable": "Jhonatan Brayan Monzon Sanchez", "cargo": "Coordinador", "correo": "jmonzon@ucv.edu.pe", "correo_area": "epingenieriasistemas.ln@ucv.edu.pe"},
+    {"tipo": "administrativo", "area": "GESTION DE LA CALIDAD", "responsable": "Sara de los Milagros Navarro Coloma", "cargo": "Directora", "correo": "snavarro@ucv.edu.pe"},
+    {"tipo": "administrativo", "area": "INFRAESTRUCTURA Y SERVICIOS GENERAL", "responsable": "Miguel Angel Parodi Palacios", "cargo": "Jefe", "correo": "mparodi@ucv.edu.pe"},
+]
+
 
 @router.get("/responsables")
 def responsables():
@@ -72,3 +80,8 @@ def areas():
 @router.get("/fuentes")
 def fuentes():
     return FUENTES
+
+
+@router.get("/areas-responsables")
+def areas_responsables():
+    return AREAS_RESPONSABLES

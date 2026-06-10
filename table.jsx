@@ -26,6 +26,16 @@ const Table = ({ rows, selectedId, onSelect }) => {
   const loading = ctx.loading;
   const error = ctx.error;
 
+  const openMail = (record) => {
+    const areaInfo = window.findAreaResponsable?.(record.proceso || record.area);
+    const to = record.responsableEmail || record.responsable_email || areaInfo?.correo || '';
+    const cc = areaInfo?.correoArea || '';
+    const subject = `Seguimiento SAC-${record.code || record.codigo || record.id}`;
+    const body = `Estimado/a ${record.responsable || areaInfo?.responsable || ''},%0D%0A%0D%0ASe remite seguimiento de la SAC-${record.code || record.codigo || record.id}.%0D%0A%0D%0ASaludos.`;
+    const ccParam = cc ? `&cc=${encodeURIComponent(cc)}` : '';
+    window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}${ccParam}&body=${body}`;
+  };
+
   return (
     <div className="table-wrap">
       {error && (
@@ -163,6 +173,9 @@ const Table = ({ rows, selectedId, onSelect }) => {
                       </button>
                       <button className="icon-btn" title="Comentar">
                         <Icon name="msg" size={15} />
+                      </button>
+                      <button className="icon-btn" title="Enviar correo" onClick={() => openMail(r)}>
+                        <Icon name="mail" size={15} />
                       </button>
                       <button className="icon-btn" title="Historial">
                         <Icon name="history" size={15} />

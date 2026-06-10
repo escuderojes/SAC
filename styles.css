@@ -1548,6 +1548,18 @@ textarea.input-area:focus, input.input-line:focus {
   font-weight: 600;
 }
 
+.readonly-stack {
+  display: grid;
+  gap: 6px;
+}
+
+.input.readonly,
+.input-area:disabled {
+  background: #F8FAFC;
+  color: var(--text-2);
+  cursor: not-allowed;
+}
+
 .spinner {
   width: 13px;
   height: 13px;

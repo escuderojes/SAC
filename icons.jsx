@@ -27,6 +27,7 @@ const Icon = ({ name, size = 16, stroke = 1.75, ...p }) => {
     case 'x': return <svg {...common}><path d="M6 6 18 18M6 18 18 6"/></svg>;
     case 'plus': return <svg {...common}><path d="M12 5v14M5 12h14"/></svg>;
     case 'download': return <svg {...common}><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>;
+    case 'mail': return <svg {...common}><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>;
     case 'upload': return <svg {...common}><path d="M12 16V5M7 10l5-5 5 5M5 20h14"/></svg>;
     case 'paperclip': return <svg {...common}><path d="m21 10-9 9a5 5 0 1 1-7-7l9-9a3.5 3.5 0 1 1 5 5L10 17a2 2 0 0 1-3-3l8-8"/></svg>;
     case 'msg': return <svg {...common}><path d="M21 12a8 8 0 1 1-3.6-6.7L21 4l-1 4.2A8 8 0 0 1 21 12z"/></svg>;

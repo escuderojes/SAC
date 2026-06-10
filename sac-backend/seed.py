@@ -82,9 +82,9 @@ def seed():
                 descripcion=item["descripcion"],
                 descripcion_sub=item["descripcion_sub"],
                 nc=item["nc"],
-                accion_inmediata="Se definio accion inmediata de contencion y comunicacion al responsable del proceso.",
-                accion_inm_responsable=item["responsable"],
-                accion_inm_fecha=item["fecha_registro"] + timedelta(days=3),
+                accion_inmediata="No aplica",
+                accion_inm_responsable="No aplica",
+                accion_inm_fecha=None,
                 analisis_causa="Analisis de causa raiz pendiente de ampliacion segun 5 Por que.",
                 analisis_whys=[
                     {"n": 1, "txt": "Se detecta incumplimiento del requisito."},

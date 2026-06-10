@@ -49,17 +49,18 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
   const [form, setForm] = React.useState({
     codigo: '',
     campus: 'UCV — Campus Lima Norte',
-    area: 'Servicios Academicos',
+    area: window.AREAS_RESPONSABLES?.[0]?.area || 'ADMINISTRACION DE EMPRESAS',
     procesoSGC: 'Formacion Academica',
     norma: 'ISO 9001:2015',
     clausula: '8.7.1 / 10.2',
     originador: 'M. Quispe Hurtado — Coord. de Calidad',
-    respArea: 'L. Sanchez Albujar',
+    respArea: window.AREAS_RESPONSABLES?.[0]?.responsable || '',
+    respAreaCorreo: window.AREAS_RESPONSABLES?.[0]?.correo || '',
     fecha: currentPeDate(),
     fuente: 'Auditoria interna',
     prioridad: 'Alta',
-    respInm: 'M. Quispe Hurtado',
-    fechaInm: currentPeDate(),
+    respInm: 'No aplica',
+    fechaInm: '',
     nc: '',
     accionInmediata: '',
     analisis: '',
@@ -68,6 +69,17 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
   const [plan, setPlan] = React.useState([{ n: 1, desc: '', resp: '', fecha: '' }]);
 
   const setField = (k, v) => {
+    if (k === 'area') {
+      const info = window.findAreaResponsable?.(v);
+      setForm(prev => ({
+        ...prev,
+        area: v,
+        respArea: info?.responsable || '',
+        respAreaCorreo: info?.correo || '',
+      }));
+      setErrors(prev => ({...prev, [k]: ''}));
+      return;
+    }
     setForm(prev => ({...prev, [k]: v}));
     setErrors(prev => ({...prev, [k]: ''}));
   };
@@ -93,6 +105,7 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
     clausula: form.clausula,
     originador: form.originador,
     responsable: form.respArea,
+    responsableEmail: form.respAreaCorreo,
     fechaReg: form.fecha,
     fuente: form.fuente,
     prio: form.prioridad.toLowerCase(),
@@ -100,9 +113,9 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
     descripcion: form.nc.slice(0, 120),
     nc: form.nc,
     accionInmediata: {
-      descripcion: form.accionInmediata,
-      responsable: form.respInm,
-      fecha: form.fechaInm,
+      descripcion: 'No aplica',
+      responsable: 'No aplica',
+      fecha: '',
     },
     analisis: form.analisis,
     planAccion: plan,
@@ -146,7 +159,7 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
           <Field label="Campus / filial" required error={errors.campus}>
             <Select value={form.campus} options={['UCV — Campus Lima Norte', 'UCV — Campus Lima Centro', 'UCV — Campus Trujillo', 'UCV — Campus Chiclayo', 'UCV — Campus Piura']} onChange={v => setField('campus', v)} icon="building" />
           </Field>
-          <Field label="Area o unidad" required error={errors.area}>
+          <Field label="Area o programa" required error={errors.area}>
             <Select value={form.area} options={window.AREAS_LIST} onChange={v => setField('area', v)} icon="folder" />
           </Field>
           <Field label="Proceso del SGC" required error={errors.procesoSGC}>
@@ -165,7 +178,16 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
             <window.ResponsableCombo value={form.originador} onChange={v => setField('originador', v)} placeholder="Buscar originador..." />
           </Field>
           <Field label="Responsable del area" error={errors.responsable}>
-            <window.ResponsableCombo value={form.respArea} onChange={v => setField('respArea', v)} />
+            <div className="readonly-stack">
+              <div className="input readonly">
+                <Icon name="users" size={13} className="ico" />
+                <span>{form.respArea || 'Seleccione un area'}</span>
+              </div>
+              <div className="input readonly">
+                <Icon name="mail" size={13} className="ico" />
+                <span>{form.respAreaCorreo || 'Sin correo registrado'}</span>
+              </div>
+            </div>
           </Field>
           <Field label="Prioridad">
             <Select value={form.prioridad} options={['Alta', 'Media', 'Baja']} onChange={v => setField('prioridad', v)} icon="flag" />
@@ -196,15 +218,14 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
       </FormCard>
 
       <FormCard n="3" title="Accion inmediata (correccion)" sub="Contencion del problema mientras se ejecuta la accion correctiva">
-        <textarea className="input-area" value={form.accionInmediata}
-          onChange={e => setField('accionInmediata', e.target.value)}
-          placeholder="Describa la accion inmediata realizada o a realizar para contener la no conformidad." />
+        <textarea className="input-area" value="No aplica" disabled
+          placeholder="No aplica" />
         <div className="form-grid" style={{gridTemplateColumns: '2fr 1fr'}}>
           <Field label="Responsable asignado" required>
-            <window.ResponsableCombo value={form.respInm} onChange={v => setField('respInm', v)} />
+            <div className="input readonly"><span>No aplica</span></div>
           </Field>
           <Field label="Fecha" required>
-            <window.DateField value={form.fechaInm} onChange={v => setField('fechaInm', v)} />
+            <div className="input readonly"><span>No aplica</span></div>
           </Field>
         </div>
       </FormCard>
