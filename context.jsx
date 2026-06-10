@@ -67,7 +67,6 @@ const AppProvider = ({ children }) => {
       const list = normalizeList(payload);
       setSacs(list);
       setFilters(prev => ({ ...prev, ...nextFilters }));
-      if (!selectedId && list.length) setSelectedId(list[0].id);
       await loadStats(nextFilters);
       return list;
     } catch (err) {
