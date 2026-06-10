@@ -30,10 +30,28 @@ const Table = ({ rows, selectedId, onSelect }) => {
     const areaInfo = window.findAreaResponsable?.(record.proceso || record.area);
     const to = record.responsableEmail || record.responsable_email || areaInfo?.correo || '';
     const cc = areaInfo?.correoArea || '';
-    const subject = `Seguimiento SAC-${record.code || record.codigo || record.id}`;
-    const body = `Estimado/a ${record.responsable || areaInfo?.responsable || ''},%0D%0A%0D%0ASe remite seguimiento de la SAC-${record.code || record.codigo || record.id}.%0D%0A%0D%0ASaludos.`;
+    const code = record.code || record.codigo || record.id;
+    const area = record.proceso || record.area || areaInfo?.area || 'su area';
+    const responsable = record.responsable || areaInfo?.responsable || '';
+    const subject = `Solicitud de Accion Correctiva SAC-${code}`;
+    const bodyText = [
+      `Estimado/a ${responsable}:`,
+      '',
+      `Por medio del presente, se remite la Solicitud de Accion Correctiva (SAC-${code}) derivada de la auditoria interna realizada al proceso de ${area}.`,
+      '',
+      'Como se detalla en el informe correspondiente, se ha identificado una no conformidad especifica vinculada al cumplimiento del procedimiento aplicable al area.',
+      '',
+      'Para el levantamiento de esta observacion, se cuenta con un plazo maximo de una semana (7 dias calendario) para remitir la SAC completada. Es indispensable que el documento contenga:',
+      '',
+      '- Analisis de causa: diagnostico que identifique por que se produjo la situacion observada.',
+      '- Cuadro de acciones correctivas: propuesta de acciones especificas, responsables y fechas, orientadas a evitar la recurrencia de la no conformidad.',
+      '',
+      'Se adjunta el formato correspondiente y el informe para su revision. Quedo a disposicion para cualquier consulta tecnica sobre el llenado del documento.',
+      '',
+      'Saludos cordiales.',
+    ].join('\r\n');
     const ccParam = cc ? `&cc=${encodeURIComponent(cc)}` : '';
-    window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}${ccParam}&body=${body}`;
+    window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}${ccParam}&body=${encodeURIComponent(bodyText)}`;
   };
 
   return (
