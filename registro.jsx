@@ -186,7 +186,7 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
             />
           </Field>
           <Field label="Norma asociada">
-            <Select value={form.norma} options={['ISO 9001:2015', 'ISO 21001:2018', 'ISO 45001:2018']} onChange={v => setField('norma', v)} icon="shield" />
+            <Select value={form.norma} options={['ISO 9001:2015', 'ISO 21001:2018', 'Binorma ISO 9001:2015 / ISO 21001:2018', 'ISO 45001:2018']} onChange={v => setField('norma', v)} icon="shield" />
           </Field>
           <Field label="Clausula / requisito">
             <input className="input-line" value={form.clausula} onChange={e => setField('clausula', e.target.value)} placeholder="Ej. 8.7.1 / 10.2" />

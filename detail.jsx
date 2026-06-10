@@ -269,7 +269,7 @@ const Detail = ({ record, onClose }) => {
                     <KV k="Fuente de no conformidad" v={record.fuente} edit={isEdit}
                         type="combo" options={window.FUENTES_LIST} />
                     <KV k="Norma asociada" v={isEdit ? 'ISO 9001:2015' : <span className="tag-norma"><Icon name="shield" size={11} />ISO 9001:2015</span>} edit={isEdit}
-                        type="combo" options={['ISO 9001:2015', 'ISO 21001:2018']} />
+                        type="combo" options={['ISO 9001:2015', 'ISO 21001:2018', 'Binorma ISO 9001:2015 / ISO 21001:2018', 'ISO 45001:2018']} />
                     <KV k="Cláusula / requisito" v={record.clausula || '8.7.1 / 10.2'} mono edit={isEdit} />
                     <KV k="Originador" v={record.originador || 'Coord. de Calidad — Auditoría Interna 2026-I'} edit={isEdit} />
                     <KV k="Fecha de registro" v={record.fechaReg} edit={isEdit} type="date" />
