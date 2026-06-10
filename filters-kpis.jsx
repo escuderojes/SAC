@@ -24,7 +24,7 @@ const Filters = ({ filters, setFilters }) => {
   };
 
   const reset = () => setFilters({ ...window.DEFAULT_FILTERS });
-  const clear = () => setFilters({ ...filters, responsable: '', area: '', procesoSGC: '', fuente: '', estados: ['todas'] });
+  const clear = () => setFilters({ ...filters, responsable: '', area: '', procesoSGC: '', procedimiento: '', fuente: '', estados: ['todas'] });
   const search = () => {
     const query = {
       ...filters,

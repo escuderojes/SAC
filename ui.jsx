@@ -7,21 +7,23 @@ const Combobox = ({ value, placeholder, options, onChange, icon, disabled, searc
   const triggerRef = React.useRef(null);
   const menuRef = React.useRef(null);
   const searchRef = React.useRef(null);
+  const safeOptions = options || [];
+  const canSearch = searchable || safeOptions.length > 10;
 
   const filtered = React.useMemo(() => {
-    if (!searchable || !query) return options;
+    if (!canSearch || !query) return safeOptions;
     const q = query.toLowerCase();
-    return options.filter(opt => {
+    return safeOptions.filter(opt => {
       const label = typeof opt === 'string' ? opt : opt.label;
-      return label.toLowerCase().includes(q);
+      return String(label || '').toLowerCase().includes(q);
     });
-  }, [options, query, searchable]);
+  }, [safeOptions, query, canSearch]);
 
   const computePos = React.useCallback(() => {
     const el = triggerRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    const itemsH = filtered.length * 34 + (searchable ? 50 : 0) + 8;
+    const itemsH = filtered.length * 34 + (canSearch ? 50 : 0) + 8;
     const menuH = Math.min(300, Math.max(60, itemsH));
     const spaceBelow = window.innerHeight - r.bottom - 8;
     const spaceAbove = r.top - 8;
@@ -33,12 +35,12 @@ const Combobox = ({ value, placeholder, options, onChange, icon, disabled, searc
       bottom: dropUp ? window.innerHeight - r.top + 4 : null,
       maxHeight: Math.max(140, dropUp ? spaceAbove : spaceBelow),
     });
-  }, [filtered.length, searchable]);
+  }, [filtered.length, canSearch]);
 
   React.useEffect(() => {
     if (!open) { setQuery(''); return; }
     computePos();
-    if (searchable) setTimeout(() => searchRef.current?.focus(), 30);
+    if (canSearch) setTimeout(() => searchRef.current?.focus(), 30);
     const onScrollOrResize = () => computePos();
     window.addEventListener('scroll', onScrollOrResize, true);
     window.addEventListener('resize', onScrollOrResize);
@@ -54,7 +56,7 @@ const Combobox = ({ value, placeholder, options, onChange, icon, disabled, searc
       window.removeEventListener('resize', onScrollOrResize);
       document.removeEventListener('mousedown', onDoc);
     };
-  }, [open, computePos, searchable]);
+  }, [open, computePos, canSearch]);
 
   return (
     <div className={'combo' + (open ? ' open' : '') + (disabled ? ' disabled' : '')}>
@@ -69,7 +71,7 @@ const Combobox = ({ value, placeholder, options, onChange, icon, disabled, searc
       </button>
       {open && pos && ReactDOM.createPortal(
         <div ref={menuRef}
-             className={'combo-menu' + (searchable ? ' searchable' : '')}
+             className={'combo-menu' + (canSearch ? ' searchable' : '')}
              style={{
                position: 'fixed',
                left: pos.left + 'px',
@@ -78,7 +80,7 @@ const Combobox = ({ value, placeholder, options, onChange, icon, disabled, searc
                bottom: pos.bottom != null ? pos.bottom + 'px' : 'auto',
                maxHeight: pos.maxHeight + 'px',
              }}>
-          {searchable && (
+          {canSearch && (
             <div className="combo-search">
               <Icon name="search" size={13} />
               <input ref={searchRef}
@@ -115,7 +117,7 @@ const Combobox = ({ value, placeholder, options, onChange, icon, disabled, searc
                      className={'combo-opt' + (selected ? ' selected' : '')}
                      onClick={() => { onChange && onChange(v); setOpen(false); }}>
                   {typeof opt !== 'string' && opt.icon && <Icon name={opt.icon} size={13} />}
-                  <span>{searchable && query ? highlightMatch(label, query) : label}</span>
+                  <span>{canSearch && query ? highlightMatch(label, query) : label}</span>
                   {selected && <Icon name="check" size={13} stroke={2.6} />}
                 </div>
               );
