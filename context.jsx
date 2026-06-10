@@ -11,6 +11,7 @@ const DEFAULT_FILTERS = {
   responsable: '',
   area: '',
   procesoSGC: '',
+  procedimiento: '',
 };
 
 const normalizeList = (payload) => {

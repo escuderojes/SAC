@@ -4,6 +4,13 @@ const campusCode = (campus) => campus && campus.includes('Lima Norte') ? 'LN' : 
 
 const Filters = ({ filters, setFilters }) => {
   const { loadSacs, loading } = window.useAppContext();
+  const [procedimientos, setProcedimientos] = React.useState([]);
+
+  React.useEffect(() => {
+    window.SacApi.getCatalogo('procedimientos')
+      .then(rows => setProcedimientos((rows || []).map(p => p.label || `${p.codigo} ${p.nombre}`)))
+      .catch(() => setProcedimientos([]));
+  }, []);
 
   const toggleEstado = (id) => {
     const cur = filters.estados || ['todas'];
@@ -94,6 +101,19 @@ const Filters = ({ filters, setFilters }) => {
             options={window.PROCESOS_SGC_LIST}
             onChange={v => setFilters({...filters, procesoSGC: v})}
             icon="shield"
+          />
+        </div>
+
+        <div className="field">
+          <label>Procedimiento</label>
+          <window.Combobox
+            value={filters.procedimiento || ''}
+            placeholder="Todos los procedimientos"
+            options={procedimientos}
+            onChange={v => setFilters({...filters, procedimiento: v})}
+            icon="doc"
+            searchable
+            searchPlaceholder="Buscar procedimiento..."
           />
         </div>
 

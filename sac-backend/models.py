@@ -32,6 +32,7 @@ class SAC(SQLModel, table=True):
     proceso: str = ""
     proceso_abbr: str = ""
     proceso_sgc: str = ""
+    procedimiento: str = ""
     norma: str = "ISO 9001:2015"
     clausula: str = ""
     fuente: str = ""
@@ -129,3 +130,33 @@ class Campus(SQLModel, table=True):
 
     iniciales: str = Field(primary_key=True)
     nombre: str
+
+
+class AreaResponsable(SQLModel, table=True):
+    __tablename__ = "area_responsable"
+
+    id: str = Field(default_factory=new_uuid, primary_key=True)
+    tipo: str = Field(index=True)
+    area: str = Field(index=True, unique=True)
+    responsable: str
+    cargo: str = ""
+    correo: str = ""
+    correo_area: str = ""
+    activo: bool = True
+
+
+class Procedimiento(SQLModel, table=True):
+    __tablename__ = "procedimiento"
+
+    id: str = Field(default_factory=new_uuid, primary_key=True)
+    codigo: str = Field(index=True)
+    nombre: str
+    activo: bool = True
+
+
+class ProcesoSGC(SQLModel, table=True):
+    __tablename__ = "proceso_sgc"
+
+    id: str = Field(default_factory=new_uuid, primary_key=True)
+    nombre: str = Field(index=True, unique=True)
+    activo: bool = True

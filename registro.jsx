@@ -50,7 +50,8 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
     codigo: '',
     campus: 'UCV — Campus Lima Norte',
     area: window.AREAS_RESPONSABLES?.[0]?.area || 'ADMINISTRACION DE EMPRESAS',
-    procesoSGC: 'Formacion Academica',
+    procesoSGC: 'ENSEÑANZA - APRENDIZAJE',
+    procedimiento: '',
     norma: 'ISO 9001:2015',
     clausula: '8.7.1 / 10.2',
     originador: 'M. Quispe Hurtado — Coord. de Calidad',
@@ -67,6 +68,7 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
   });
 
   const [plan, setPlan] = React.useState([{ n: 1, desc: '', resp: '', fecha: '' }]);
+  const [procedimientos, setProcedimientos] = React.useState([]);
 
   const setField = (k, v) => {
     if (k === 'area') {
@@ -94,6 +96,12 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
       .catch(() => {});
   }, [form.campus]);
 
+  React.useEffect(() => {
+    window.SacApi.getCatalogo('procedimientos')
+      .then(rows => setProcedimientos((rows || []).map(p => p.label || `${p.codigo} ${p.nombre}`)))
+      .catch(() => setProcedimientos([]));
+  }, []);
+
   const payload = () => ({
     code: form.codigo.replace(/^SAC-/, ''),
     codigo: form.codigo,
@@ -101,6 +109,7 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
     area: form.area,
     proceso: form.area,
     procesoSGC: form.procesoSGC,
+    procedimiento: form.procedimiento,
     norma: form.norma,
     clausula: form.clausula,
     originador: form.originador,
@@ -164,6 +173,17 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
           </Field>
           <Field label="Proceso del SGC" required error={errors.procesoSGC}>
             <Select value={form.procesoSGC} options={window.PROCESOS_SGC_LIST} onChange={v => setField('procesoSGC', v)} icon="shield" />
+          </Field>
+          <Field label="Procedimiento">
+            <window.Combobox
+              value={form.procedimiento}
+              placeholder="Seleccionar procedimiento"
+              options={procedimientos}
+              onChange={v => setField('procedimiento', v)}
+              icon="doc"
+              searchable
+              searchPlaceholder="Buscar procedimiento..."
+            />
           </Field>
           <Field label="Norma asociada">
             <Select value={form.norma} options={['ISO 9001:2015', 'ISO 21001:2018', 'ISO 45001:2018']} onChange={v => setField('norma', v)} icon="shield" />

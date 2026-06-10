@@ -5,7 +5,8 @@ from sqlmodel import Session, select
 from auth import hash_password
 from database import create_db_and_tables, engine
 from models import Campus, SAC, SACHistorial, SACPlanAccion, Usuario
-from routers.catalogos import CAMPUS
+from models import AreaResponsable, Procedimiento, ProcesoSGC
+from routers.catalogos import CAMPUS, PROCEDIMIENTOS, PROCESOS_SGC, load_areas_responsables_fallback
 from routers.sac import FUENTE_ABBR
 from schemas import initials
 
@@ -43,6 +44,29 @@ def seed():
         for item in CAMPUS:
             if not session.get(Campus, item["iniciales"]):
                 session.add(Campus(**item))
+
+        for item in load_areas_responsables_fallback():
+            exists = session.exec(select(AreaResponsable).where(AreaResponsable.area == item["area"])).first()
+            if not exists:
+                session.add(AreaResponsable(
+                    tipo=item.get("tipo", ""),
+                    area=item.get("area", ""),
+                    responsable=item.get("responsable", ""),
+                    cargo=item.get("cargo", ""),
+                    correo=item.get("correo", ""),
+                    correo_area=item.get("correoArea") or item.get("correo_area", ""),
+                ))
+
+        for nombre in PROCESOS_SGC:
+            exists = session.exec(select(ProcesoSGC).where(ProcesoSGC.nombre == nombre)).first()
+            if not exists:
+                session.add(ProcesoSGC(nombre=nombre))
+
+        for codigo, nombre in PROCEDIMIENTOS:
+            key = f"{codigo} {nombre}"
+            exists = session.exec(select(Procedimiento).where(Procedimiento.codigo == codigo, Procedimiento.nombre == nombre)).first()
+            if not exists:
+                session.add(Procedimiento(codigo=codigo, nombre=nombre))
 
         for user in USERS:
             exists = session.exec(select(Usuario).where(Usuario.email == user["email"])).first()

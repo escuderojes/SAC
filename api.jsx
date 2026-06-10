@@ -89,6 +89,9 @@ const api = {
   me() {
     return request('/api/auth/me');
   },
+  getCatalogo(name) {
+    return request(`/api/catalogos/${encodeURIComponent(name)}`);
+  },
 };
 
 window.SacApi = api;

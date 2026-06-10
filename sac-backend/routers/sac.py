@@ -80,6 +80,7 @@ def list_item(sac: SAC) -> SACListItem:
         proceso=sac.proceso,
         procesoAbbr=sac.proceso_abbr,
         procesoSGC=sac.proceso_sgc,
+        procedimiento=sac.procedimiento,
         responsable=sac.responsable,
         responsableShort=sac.responsable_short,
         descripcion=sac.descripcion,
@@ -196,6 +197,7 @@ def sac_from_create(payload: SACCreate, session: Session, user: Usuario) -> SAC:
         proceso=proceso,
         proceso_abbr=initials(proceso),
         proceso_sgc=payload.proceso_sgc or payload.procesoSGC or "",
+        procedimiento=payload.procedimiento or "",
         norma=payload.norma,
         clausula=payload.clausula,
         fuente=payload.fuente,
@@ -291,6 +293,7 @@ def list_sacs(
     fechaFin: Optional[str] = None,
     area: Optional[str] = None,
     procesoSGC: Optional[str] = None,
+    procedimiento: Optional[str] = None,
     q: Optional[str] = None,
     page: int = 1,
     page_size: int = 20,
@@ -317,6 +320,8 @@ def list_sacs(
         stmt = stmt.where(SAC.proceso == area)
     if procesoSGC:
         stmt = stmt.where(SAC.proceso_sgc == procesoSGC)
+    if procedimiento:
+        stmt = stmt.where(SAC.procedimiento == procedimiento)
     start_date = fecha_inicio or fechaInicio
     end_date = fecha_fin or fechaFin
     if start_date:

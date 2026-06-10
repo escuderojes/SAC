@@ -112,6 +112,7 @@ class SACBase(BaseModel):
     proceso_abbr: Optional[str] = None
     procesoSGC: Optional[str] = None
     proceso_sgc: Optional[str] = None
+    procedimiento: Optional[str] = None
     norma: str = "ISO 9001:2015"
     clausula: str = ""
     fuente: str = ""
@@ -189,6 +190,7 @@ class SACListItem(BaseModel):
     proceso: str
     procesoAbbr: str
     procesoSGC: str
+    procedimiento: str = ""
     responsable: str
     responsableShort: str
     descripcion: str
