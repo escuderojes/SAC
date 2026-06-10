@@ -50,8 +50,15 @@ const Table = ({ rows, selectedId, onSelect }) => {
       '',
       'Saludos cordiales.',
     ].join('\r\n');
-    const ccParam = cc ? `&cc=${encodeURIComponent(cc)}` : '';
-    window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}${ccParam}&body=${encodeURIComponent(bodyText)}`;
+    const params = new URLSearchParams({
+      view: 'cm',
+      fs: '1',
+      to,
+      su: subject,
+      body: bodyText,
+    });
+    if (cc) params.set('cc', cc);
+    window.open(`https://mail.google.com/mail/?${params.toString()}`, '_blank', 'noopener,noreferrer');
   };
 
   return (
