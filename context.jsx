@@ -1,0 +1,180 @@
+/* App-wide state for SAC SPA */
+
+const AppContext = React.createContext(null);
+
+const DEFAULT_FILTERS = {
+  campus: 'UCV — Campus Lima Norte',
+  estados: ['todas'],
+  fuente: '',
+  fechaInicio: '',
+  fechaFin: '',
+  responsable: '',
+  area: '',
+  procesoSGC: '',
+};
+
+const normalizeList = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (payload && Array.isArray(payload.items)) return payload.items;
+  if (payload && Array.isArray(payload.data)) return payload.data;
+  if (payload && Array.isArray(payload.results)) return payload.results;
+  return [];
+};
+
+const normalizeStats = (payload) => payload || {};
+
+const getErrorText = (err) => err?.message || 'Error de red. Verifique que el backend este disponible.';
+
+const AppProvider = ({ children }) => {
+  const [sacs, setSacs] = React.useState([]);
+  const [stats, setStats] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+  const [statsLoading, setStatsLoading] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+  const [creating, setCreating] = React.useState(false);
+  const [exporting, setExporting] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [selectedId, setSelectedId] = React.useState(null);
+  const [selectedSac, setSelectedSac] = React.useState(null);
+  const [filters, setFilters] = React.useState(DEFAULT_FILTERS);
+
+  const loadStats = React.useCallback(async (nextFilters = filters) => {
+    setStatsLoading(true);
+    try {
+      const payload = await window.SacApi.getStats(nextFilters);
+      setStats(normalizeStats(payload));
+    } catch (err) {
+      setStats(null);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [filters]);
+
+  const loadSacs = React.useCallback(async (nextFilters = filters) => {
+    setLoading(true);
+    setError('');
+    try {
+      const payload = await window.SacApi.getSacs(nextFilters);
+      const list = normalizeList(payload);
+      setSacs(list);
+      setFilters(prev => ({ ...prev, ...nextFilters }));
+      if (!selectedId && list.length) setSelectedId(list[0].id);
+      await loadStats(nextFilters);
+      return list;
+    } catch (err) {
+      setError(getErrorText(err));
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [filters, loadStats, selectedId]);
+
+  const refreshSac = React.useCallback(async (id = selectedId) => {
+    if (!id) return null;
+    try {
+      const sac = await window.SacApi.getSac(id);
+      setSelectedSac(sac);
+      setSacs(prev => prev.map(item => item.id === id ? { ...item, ...sac } : item));
+      return sac;
+    } catch (err) {
+      setError(getErrorText(err));
+      throw err;
+    }
+  }, [selectedId]);
+
+  React.useEffect(() => {
+    if (!selectedId) {
+      setSelectedSac(null);
+      return;
+    }
+    const listed = sacs.find(item => item.id === selectedId) || null;
+    setSelectedSac(listed);
+    refreshSac(selectedId).catch(() => {});
+  }, [selectedId]);
+
+  const createSac = React.useCallback(async (data) => {
+    setCreating(true);
+    setError('');
+    try {
+      const created = await window.SacApi.createSac(data);
+      await loadSacs(filters);
+      return created;
+    } catch (err) {
+      setError(getErrorText(err));
+      throw err;
+    } finally {
+      setCreating(false);
+    }
+  }, [filters, loadSacs]);
+
+  const updateSac = React.useCallback(async (id, data) => {
+    setSaving(true);
+    setError('');
+    try {
+      const updated = await window.SacApi.updateSac(id, data);
+      setSelectedSac(updated);
+      setSacs(prev => prev.map(item => item.id === id ? { ...item, ...updated } : item));
+      await loadStats(filters);
+      return updated;
+    } catch (err) {
+      setError(getErrorText(err));
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  }, [filters, loadStats]);
+
+  const exportSac = React.useCallback(async (id, code) => {
+    setExporting(true);
+    setError('');
+    try {
+      const blob = await window.SacApi.exportSac(id);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `SAC-${code || id}.docx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(getErrorText(err));
+      throw err;
+    } finally {
+      setExporting(false);
+    }
+  }, []);
+
+  const value = {
+    sacs,
+    stats,
+    loading,
+    statsLoading,
+    saving,
+    creating,
+    exporting,
+    error,
+    setError,
+    selectedId,
+    setSelectedId,
+    selectedSac,
+    filters,
+    setFilters,
+    loadSacs,
+    loadStats,
+    refreshSac,
+    createSac,
+    updateSac,
+    exportSac,
+  };
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+};
+
+const useAppContext = () => {
+  const ctx = React.useContext(AppContext);
+  if (!ctx) throw new Error('useAppContext debe usarse dentro de AppProvider');
+  return ctx;
+};
+
+Object.assign(window, { AppContext, AppProvider, useAppContext, DEFAULT_FILTERS });

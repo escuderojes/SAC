@@ -1,0 +1,21 @@
+# Frontend
+node_modules/
+dist/
+.vite/
+
+# Backend
+sac-backend/.venv/
+sac-backend/__pycache__/
+sac-backend/**/__pycache__/
+sac-backend/*.pyc
+sac-backend/sac.db
+sac-backend/.env
+
+# Local/editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
