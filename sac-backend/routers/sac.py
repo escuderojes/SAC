@@ -178,6 +178,10 @@ def add_history(session: Session, sac_id: str, who: str, what: str, kind: str = 
     session.add(SACHistorial(sac_id=sac_id, who=who, what=what, kind=kind, icon=icon, em=em))
 
 
+def plan_responsable(accion) -> str:
+    return accion.responsable or getattr(accion, "resp", None) or ""
+
+
 def renumber_active_sacs(session: Session, campus: str, year: int) -> None:
     suffix = f"-{year}-{campus}"
     rows = session.exec(
@@ -384,12 +388,13 @@ def create_sac(payload: SACCreate, session: Session = Depends(get_session), user
     session.flush()
     plan = payload.plan_acciones or payload.planAccion or []
     for idx, accion in enumerate(plan, start=1):
+        responsable = plan_responsable(accion)
         session.add(SACPlanAccion(
             sac_id=sac.id,
             orden=accion.orden or accion.n or idx,
             desc=accion.desc,
-            responsable=accion.responsable,
-            responsable_av=accion.responsable_av or accion.av or initials(accion.responsable),
+            responsable=responsable,
+            responsable_av=accion.responsable_av or accion.av or initials(responsable),
             fecha=accion.fecha,
             estado=accion.estado,
         ))
@@ -407,27 +412,41 @@ def update_sac(sac_id: str, payload: SACUpdate, session: Session = Depends(get_s
     old_estado = sac.estado
     old_responsable = sac.responsable
     old_implementacion = sac.implementacion
+    old_timeline_step = sac.timeline_step
     changes = apply_update(sac, payload)
     if payload.plan_acciones is not None or payload.planAccion is not None:
         for existing in list(sac.plan_acciones):
             session.delete(existing)
+        sac.plan_acciones = []
         session.flush()
-        for idx, accion in enumerate(payload.plan_acciones or payload.planAccion or [], start=1):
+        plan_items = payload.planAccion if payload.planAccion is not None else payload.plan_acciones or []
+        plan_dates = []
+        for idx, accion in enumerate(plan_items, start=1):
+            responsable = plan_responsable(accion)
+            if accion.fecha:
+                plan_dates.append(accion.fecha)
             session.add(SACPlanAccion(
                 sac_id=sac.id,
                 orden=accion.orden or accion.n or idx,
                 desc=accion.desc,
-                responsable=accion.responsable,
-                responsable_av=accion.responsable_av or accion.av or initials(accion.responsable),
+                responsable=responsable,
+                responsable_av=accion.responsable_av or accion.av or initials(responsable),
                 fecha=accion.fecha,
                 estado=accion.estado,
             ))
+        if plan_dates:
+            sac.fecha_compromiso = max(plan_dates)
     if "estado" in changes or old_estado != sac.estado:
         add_history(session, sac.id, user.nombre, f"cambio el estado de {old_estado} a", "amber", "flag", sac.estado)
     if old_responsable != sac.responsable:
         add_history(session, sac.id, user.nombre, "reasigno la SAC a", "blue", "users", sac.responsable)
     if old_implementacion != sac.implementacion:
         add_history(session, sac.id, user.nombre, "actualizo la implementacion a", "green", "check", f"{sac.implementacion}%")
+    if old_timeline_step != sac.timeline_step:
+        label = "etapa " + str(sac.timeline_step)
+        if 0 <= sac.timeline_step < 7:
+            label = ["Deteccion", "Registro", "Analisis", "Plan de accion", "Implementacion", "Verificacion", "Cierre"][sac.timeline_step]
+        add_history(session, sac.id, user.nombre, "actualizo el progreso a", "blue", "target", label)
     if not changes:
         add_history(session, sac.id, user.nombre, "actualizo la informacion de la SAC", "blue", "edit")
     session.add(sac)

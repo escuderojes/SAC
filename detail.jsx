@@ -121,6 +121,11 @@ const planEstadoByValue = (val) => PLAN_ESTADOS.find(s => s.value === val) ||
    PLAN_ESTADOS[0]);
 const planEstadoLabel = (val) => planEstadoByValue(val).label;
 const planEstadoBadge = (val) => planEstadoByValue(val).badge;
+const toUiDate = (value) => {
+  if (!value || typeof value !== 'string') return value || '';
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
+};
 
 const Detail = ({ record, onClose }) => {
   const { updateSac, exportSac, saving, exporting } = window.useAppContext();
@@ -155,7 +160,11 @@ const Detail = ({ record, onClose }) => {
     setTab('general');
     setEditing(null);
     setPlanModal(null);
-    setPlanRows(record?.planAccion || record?.plan_accion || PLAN_ACCION);
+    setPlanRows((record?.planAccion || record?.plan_accion || PLAN_ACCION).map(row => ({
+      ...row,
+      resp: row.resp || row.responsable || '',
+      fecha: toUiDate(row.fecha),
+    })));
     setTlCurrent(Number.isInteger(record?.timeline_step) ? record.timeline_step : 0);
     setTlDates((record?.timeline_dates || []).concat(Array(TIMELINE_STEPS.length).fill('')).slice(0, TIMELINE_STEPS.length));
     setVerif({
@@ -180,13 +189,23 @@ const Detail = ({ record, onClose }) => {
     'pendiente'
   );
 
+  const normalizedPlanRows = () => planRows.map((row, index) => ({
+    n: row.n || index + 1,
+    orden: row.orden || row.n || index + 1,
+    desc: row.desc || '',
+    responsable: row.responsable || row.resp || '',
+    responsable_av: row.responsable_av || row.av || '',
+    av: row.av || row.responsable_av || '',
+    fecha: row.fecha || '',
+    estado: row.estado || 'pendiente',
+  }));
+
   const buildPayload = () => ({
-    ...record,
     estado: timelineEstado(tlCurrent),
     implementacion: Math.round((tlCurrent / Math.max(1, TIMELINE_STEPS.length - 1)) * 100),
     timeline_step: tlCurrent,
     timeline_dates: tlDates,
-    planAccion: planRows,
+    planAccion: normalizedPlanRows(),
     verificacion: verif,
   });
 
@@ -430,7 +449,7 @@ const Detail = ({ record, onClose }) => {
                       <td>
                         <div className="assignee">
                           <span className={'av ' + (p.cls || 'g3')}>{p.av || '?'}</span>
-                          {p.resp || <span style={{color:'var(--text-3)'}}>—</span>}
+                          {p.resp || p.responsable || <span style={{color:'var(--text-3)'}}>—</span>}
                         </div>
                       </td>
                       <td>{p.fecha ? <span className="muted">{p.fecha}</span> : <span style={{color:'var(--text-3)'}}>—</span>}</td>
@@ -668,13 +687,14 @@ const PlanEditModal = ({ mode, row, onCancel, onSave }) => {
 
   React.useEffect(() => {
     // auto-derive initials and color from name
-    if (r.resp) {
-      const parts = r.resp.trim().split(/\s+/);
+    const responsable = r.resp || r.responsable || '';
+    if (responsable) {
+      const parts = responsable.trim().split(/\s+/);
       const initials = (parts[0]?.[0] || '?') + (parts[parts.length - 1]?.[0] || '');
       setR(prev => ({...prev, av: initials.toUpperCase()}));
     }
     // eslint-disable-next-line
-  }, [r.resp]);
+  }, [r.resp, r.responsable]);
 
   return (
     <div className="modal-scrim show" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
@@ -705,7 +725,7 @@ const PlanEditModal = ({ mode, row, onCancel, onSave }) => {
             <div className="field">
               <label className="req">Responsable</label>
               <window.ResponsableCombo
-                value={r.resp}
+                value={r.resp || r.responsable || ''}
                 onChange={v => set('resp', v)}
                 placeholder="Buscar y seleccionar responsable…"
               />

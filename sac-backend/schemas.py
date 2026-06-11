@@ -58,6 +58,7 @@ class PlanAccionBase(BaseModel):
     orden: Optional[int] = None
     desc: str = ""
     responsable: str = ""
+    resp: Optional[str] = None
     responsable_av: Optional[str] = None
     av: Optional[str] = None
     fecha: Optional[date] = None
@@ -73,6 +74,7 @@ class PlanAccionCreate(PlanAccionBase):
 class PlanAccionUpdate(BaseModel):
     desc: Optional[str] = None
     responsable: Optional[str] = None
+    resp: Optional[str] = None
     responsable_av: Optional[str] = None
     av: Optional[str] = None
     fecha: Optional[date] = None
