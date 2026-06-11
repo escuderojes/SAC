@@ -387,8 +387,11 @@ def create_sac(payload: SACCreate, session: Session = Depends(get_session), user
     session.add(sac)
     session.flush()
     plan = payload.plan_acciones or payload.planAccion or []
+    plan_dates = []
     for idx, accion in enumerate(plan, start=1):
         responsable = plan_responsable(accion)
+        if accion.fecha:
+            plan_dates.append(accion.fecha)
         session.add(SACPlanAccion(
             sac_id=sac.id,
             orden=accion.orden or accion.n or idx,
@@ -398,6 +401,8 @@ def create_sac(payload: SACCreate, session: Session = Depends(get_session), user
             fecha=accion.fecha,
             estado=accion.estado,
         ))
+    if plan_dates:
+        sac.fecha_compromiso = max(plan_dates)
     add_history(session, sac.id, user.nombre, "registro la SAC en el sistema", "blue", "file-plus")
     session.commit()
     session.refresh(sac)
@@ -434,8 +439,7 @@ def update_sac(sac_id: str, payload: SACUpdate, session: Session = Depends(get_s
                 fecha=accion.fecha,
                 estado=accion.estado,
             ))
-        if plan_dates:
-            sac.fecha_compromiso = max(plan_dates)
+        sac.fecha_compromiso = max(plan_dates) if plan_dates else None
     if "estado" in changes or old_estado != sac.estado:
         add_history(session, sac.id, user.nombre, f"cambio el estado de {old_estado} a", "amber", "flag", sac.estado)
     if old_responsable != sac.responsable:
