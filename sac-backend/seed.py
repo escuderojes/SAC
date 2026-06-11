@@ -16,7 +16,7 @@ def d(days_delta: int) -> date:
 
 
 USERS = [
-    {"nombre": "M. Quispe Hurtado", "email": "mquispe@ucv.edu.pe", "rol": "coordinador", "campus": "LN"},
+    {"nombre": "Sara de los Milagros Navarro Coloma", "email": "snavarro@ucv.edu.pe", "rol": "directora_calidad", "campus": "LN"},
 ]
 
 SACS = [
@@ -71,10 +71,25 @@ def seed():
         for user in USERS:
             exists = session.exec(select(Usuario).where(Usuario.email == user["email"])).first()
             if not exists:
-                session.add(Usuario(**user, password_hash=hash_password("admin123")))
+                legacy = session.exec(select(Usuario).where(Usuario.email == "mquispe@ucv.edu.pe")).first()
+                if legacy:
+                    legacy.nombre = user["nombre"]
+                    legacy.email = user["email"]
+                    legacy.rol = user["rol"]
+                    legacy.campus = user["campus"]
+                    legacy.password_hash = hash_password("admin123")
+                    legacy.activo = True
+                else:
+                    session.add(Usuario(**user, password_hash=hash_password("admin123")))
+            else:
+                exists.nombre = user["nombre"]
+                exists.rol = user["rol"]
+                exists.campus = user["campus"]
+                exists.password_hash = hash_password("admin123")
+                exists.activo = True
 
         session.commit()
-        creator = session.exec(select(Usuario).where(Usuario.email == "mquispe@ucv.edu.pe")).first()
+        creator = session.exec(select(Usuario).where(Usuario.email == "snavarro@ucv.edu.pe")).first()
 
         for item in SACS:
             codigo = f"SAC-{item['code']}"

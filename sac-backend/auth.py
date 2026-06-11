@@ -58,10 +58,10 @@ def public_user(user: Usuario) -> dict:
 def demo_user() -> Usuario:
     return Usuario(
         id="demo-user",
-        nombre="M. Quispe Hurtado",
-        email="mquispe@ucv.edu.pe",
+        nombre="Sara de los Milagros Navarro Coloma",
+        email="snavarro@ucv.edu.pe",
         password_hash="",
-        rol="coordinador",
+        rol="directora_calidad",
         campus="LN",
     )
 

@@ -54,10 +54,10 @@ const Header = ({ campus, title, subtitle, crumb, user, onLogout }) => (
         <Icon name="help" size={17} />
       </button>
       <div className="user-chip">
-        <div className="av">{(user?.nombre || 'MQ').split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase()}</div>
+        <div className="av">{(user?.nombre || 'SN').split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase()}</div>
         <div>
-          <div className="nm">{user?.nombre || 'M. Quispe Hurtado'}</div>
-          <div className="rl">{user?.rol || 'Coord. de Calidad'}</div>
+          <div className="nm">{user?.nombre || 'Sara de los Milagros Navarro Coloma'}</div>
+          <div className="rl">{user?.rol || 'Directora de Calidad'}</div>
         </div>
         <button className="logout-mini" onClick={onLogout} title="Cerrar sesion">
           <Icon name="x" size={13} />
