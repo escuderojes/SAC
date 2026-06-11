@@ -4,7 +4,7 @@ const TableSkeletonRows = () => (
   <React.Fragment>
     {[1, 2, 3, 4].map(i => (
       <tr key={i} className="skeleton-row">
-        {Array.from({ length: 13 }).map((_, j) => (
+        {Array.from({ length: 12 }).map((_, j) => (
           <td key={j}><span className="sk-line"></span></td>
         ))}
       </tr>
@@ -14,7 +14,7 @@ const TableSkeletonRows = () => (
 
 const EmptyRows = () => (
   <tr>
-    <td colSpan="13" style={{textAlign:'center', padding:'28px', color:'var(--text-3)'}}>
+    <td colSpan="12" style={{textAlign:'center', padding:'28px', color:'var(--text-3)'}}>
       No se encontraron solicitudes SAC con los filtros seleccionados.
     </td>
   </tr>
@@ -25,6 +25,13 @@ const Table = ({ rows, selectedId, onSelect }) => {
   const data = rows || ctx.sacs;
   const loading = ctx.loading;
   const error = ctx.error;
+  const [menuOpen, setMenuOpen] = React.useState(null);
+
+  React.useEffect(() => {
+    const close = () => setMenuOpen(null);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, []);
 
   const openMail = (record) => {
     const areaInfo = window.findAreaResponsable?.(record.proceso || record.area);
@@ -79,7 +86,7 @@ const Table = ({ rows, selectedId, onSelect }) => {
         <div className="right">
           <div className="search-input">
             <Icon name="search" size={14} />
-            <input placeholder="Buscar codigo, descripcion o responsable..." />
+            <input placeholder="Buscar codigo o responsable..." />
           </div>
           <button className="btn sm">
             <Icon name="filter" size={13} />
@@ -101,7 +108,6 @@ const Table = ({ rows, selectedId, onSelect }) => {
               <th>Area o unidad</th>
               <th>Proceso del SGC</th>
               <th>Responsable</th>
-              <th>Descripcion corta / NC</th>
               <th>Fuente</th>
               <th>Registro</th>
               <th>Compromiso</th>
@@ -144,12 +150,6 @@ const Table = ({ rows, selectedId, onSelect }) => {
                     </div>
                   </td>
                   <td>
-                    <div className="desc">
-                      {r.descripcion || r.nc || '-'}
-                      <div className="sub">{r.descripcionSub || ''}</div>
-                    </div>
-                  </td>
-                  <td>
                     <span style={{
                       background:'#F1F5F9', color: '#475569',
                       padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 500
@@ -187,17 +187,11 @@ const Table = ({ rows, selectedId, onSelect }) => {
                   </td>
                   <td>
                     <div className="row-actions" style={{justifyContent:'flex-end'}} onClick={(e)=>e.stopPropagation()}>
-                      <button className="icon-btn" title="Ver detalle" onClick={() => onSelect(r.id)}>
-                        <Icon name="eye" size={15} />
-                      </button>
                       <button className="icon-btn" title="Editar" onClick={() => onSelect(r.id)}>
                         <Icon name="edit" size={15} />
                       </button>
                       <button className="icon-btn" title="Adjuntar evidencia">
                         <Icon name="paperclip" size={15} />
-                      </button>
-                      <button className="icon-btn" title="Comentar">
-                        <Icon name="msg" size={15} />
                       </button>
                       <button className="icon-btn" title="Enviar correo" onClick={() => openMail(r)}>
                         <Icon name="mail" size={15} />
@@ -205,9 +199,24 @@ const Table = ({ rows, selectedId, onSelect }) => {
                       <button className="icon-btn" title="Historial">
                         <Icon name="history" size={15} />
                       </button>
-                      <button className="icon-btn" title="Mas opciones">
-                        <Icon name="more" size={15} />
-                      </button>
+                      <div style={{position:'relative'}}>
+                        <button className="icon-btn" title="Mas opciones" onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === r.id ? null : r.id); }}>
+                          <Icon name="more" size={15} />
+                        </button>
+                        {menuOpen === r.id && (
+                          <div className="row-menu" onClick={(e) => e.stopPropagation()}>
+                            <button className="danger" onClick={() => {
+                              setMenuOpen(null);
+                              if (window.confirm(`¿Eliminar ${r.codigo || 'esta SAC'}? Esta accion renumerara las SAC restantes.`)) {
+                                ctx.deleteSac(r.id).catch(() => {});
+                              }
+                            }}>
+                              <Icon name="x" size={13} />
+                              Eliminar SAC
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </td>
                 </tr>

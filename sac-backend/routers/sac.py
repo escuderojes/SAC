@@ -170,12 +170,31 @@ def normalize_campus(value: Optional[str]) -> str:
 
 def next_code(session: Session, campus_iniciales: str, year: int) -> str:
     pattern = f"%-{year}-{campus_iniciales}%"
-    count = session.exec(select(func.count(SAC.id)).where(SAC.code.like(pattern))).one()
+    count = session.exec(select(func.count(SAC.id)).where(SAC.code.like(pattern), SAC.activo == True)).one()  # noqa: E712
     return f"{count + 1:02d}-{year}-{campus_iniciales}"
 
 
 def add_history(session: Session, sac_id: str, who: str, what: str, kind: str = "blue", icon: str = "file-plus", em: Optional[str] = None):
     session.add(SACHistorial(sac_id=sac_id, who=who, what=what, kind=kind, icon=icon, em=em))
+
+
+def renumber_active_sacs(session: Session, campus: str, year: int) -> None:
+    suffix = f"-{year}-{campus}"
+    rows = session.exec(
+        select(SAC)
+        .where(SAC.activo == True, SAC.campus_iniciales == campus, SAC.code.endswith(suffix))  # noqa: E712
+        .order_by(SAC.fecha_registro, SAC.creado_en, SAC.id)
+    ).all()
+    for sac in rows:
+        sac.code = f"TMP-{sac.id}"
+        sac.codigo = f"TMP-{sac.id}"
+        session.add(sac)
+    session.flush()
+    for index, sac in enumerate(rows, start=1):
+        new_code = f"{index:02d}-{year}-{campus}"
+        sac.code = new_code
+        sac.codigo = f"SAC-{new_code}"
+        session.add(sac)
 
 
 def sac_from_create(payload: SACCreate, session: Session, user: Usuario) -> SAC:
@@ -219,7 +238,7 @@ def sac_from_create(payload: SACCreate, session: Session, user: Usuario) -> SAC:
         accion_inm_fecha=parse_date(accion.get("fecha")) if accion.get("fecha") else None,
         analisis_causa=payload.analisis_causa or payload.analisis or "",
         analisis_whys=payload.analisis_whys or [],
-        timeline_step=1,
+        timeline_step=0,
         timeline_dates=payload.timeline_dates or [],
         creado_por=user.id,
     )
@@ -419,14 +438,20 @@ def update_sac(sac_id: str, payload: SACUpdate, session: Session = Depends(get_s
 
 @router.delete("/{sac_id}")
 def delete_sac(sac_id: str, session: Session = Depends(get_session), user: Usuario = Depends(get_current_user)):
-    if user.rol != "coordinador":
-        raise HTTPException(status_code=403, detail="Solo coordinador puede eliminar SAC.")
+    if user.rol not in {"coordinador", "directora_calidad"}:
+        raise HTTPException(status_code=403, detail="No tiene permisos para eliminar SAC.")
     sac = session.get(SAC, sac_id)
     if not sac or not sac.activo:
         raise HTTPException(status_code=404, detail="SAC no encontrada.")
+    campus = sac.campus_iniciales
+    year = sac.fecha_registro.year
     sac.activo = False
+    sac.code = f"DEL-{sac.code}-{sac.id[:8]}"
+    sac.codigo = f"DEL-{sac.codigo}-{sac.id[:8]}"
     sac.actualizado_en = utcnow()
     add_history(session, sac.id, user.nombre, "desactivo la SAC", "red", "x")
     session.add(sac)
+    session.flush()
+    renumber_active_sacs(session, campus, year)
     session.commit()
     return {"ok": True}

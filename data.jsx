@@ -33,9 +33,7 @@ const TIMELINE_STEPS = [
 
 const PLAN_ACCION = [];
 
-const ACTIVITY = [
-  { kind: 'blue', icon: 'file-plus', who: 'Sistema SAC', when: 'Actividad reciente', what: 'registro creado o actualizado desde el backend' },
-];
+const ACTIVITY = [];
 
 const WHYS = [
   { n: 'Por que 1', txt: 'Registre el primer nivel de analisis de causa.' },

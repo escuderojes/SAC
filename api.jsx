@@ -80,6 +80,9 @@ const api = {
   updateSac(id, data) {
     return request(`/api/sac/${encodeURIComponent(id)}`, jsonOptions('PUT', data));
   },
+  deleteSac(id) {
+    return request(`/api/sac/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  },
   exportSac(id) {
     return request(`/api/sac/${encodeURIComponent(id)}/export`, { blob: true });
   },

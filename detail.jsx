@@ -37,7 +37,7 @@ const Timeline = ({ current, dates, onSelect }) => {
 };
 
 /* Editable section wrapper */
-const EditableSection = ({ icon, iconTone, title, sectionKey, editingKey, setEditing, headerExtras, children, onSave, onCancel }) => {
+const EditableSection = ({ icon, iconTone, title, sectionKey, editingKey, setEditing, headerExtras, children, onSave, onCancel, editable = true }) => {
   const editing = editingKey === sectionKey;
   return (
     <div className={'section' + (editing ? ' editing' : '')}>
@@ -48,11 +48,13 @@ const EditableSection = ({ icon, iconTone, title, sectionKey, editingKey, setEdi
         {title}
         <div className="right">
           {headerExtras}
-          <button className={'edit-icon' + (editing ? ' active' : '')}
-                  title={editing ? 'Editando…' : 'Editar sección'}
-                  onClick={() => setEditing(editing ? null : sectionKey)}>
-            <Icon name="edit" size={14} />
-          </button>
+          {editable && (
+            <button className={'edit-icon' + (editing ? ' active' : '')}
+                    title={editing ? 'Editando…' : 'Editar sección'}
+                    onClick={() => setEditing(editing ? null : sectionKey)}>
+              <Icon name="edit" size={14} />
+            </button>
+          )}
         </div>
       </h3>
       {typeof children === 'function' ? children(editing) : children}
@@ -127,8 +129,8 @@ const Detail = ({ record, onClose }) => {
   const [causeView, setCauseView] = React.useState('whys');
   const [planRows, setPlanRows] = React.useState([]);
   const [planModal, setPlanModal] = React.useState(null);
-  const [tlCurrent, setTlCurrent] = React.useState(4); // Implementación
-  const [tlDates, setTlDates] = React.useState(['28/04', '04/05', '08/05', '12/05', '20/05', '', '']);
+  const [tlCurrent, setTlCurrent] = React.useState(0);
+  const [tlDates, setTlDates] = React.useState(Array(TIMELINE_STEPS.length).fill(''));
   const handleTlSelect = (i) => {
     setTlCurrent(i);
     // auto-stamp today's date on the selected step if empty
@@ -136,15 +138,14 @@ const Detail = ({ record, onClose }) => {
     setTlDates(prev => prev.map((d, idx) => idx === i && !d ? today : d));
   };
   const [verif, setVerif] = React.useState({
-    impl_desc: 'Se verifica que en la nueva política se cumple con lo expuesto. Se confirmó la implementación del módulo automatizado de alertas en SIGA, así como la difusión del nuevo procedimiento PD-AC-04 (v2) a las cuatro escuelas profesionales involucradas.',
-    impl_verif_por: 'L. Sánchez Albújar',
-    impl_fecha: '20/05/2026',
-    impl_eficacia_desde: 'Próximo cierre académico (Semestre 2026-I) — 30/07/2026',
-
-    efic_docs: 'Reporte de cumplimiento SIGA del periodo 2026-I; matriz de control automatizado; actas de reuniones de seguimiento con coordinadores académicos; encuesta de satisfacción interna a usuarios del módulo.',
+    impl_desc: '',
+    impl_verif_por: '',
+    impl_fecha: '',
+    impl_eficacia_desde: '',
+    efic_docs: '',
     efic_eficaz: '',
     efic_cierra: '',
-    efic_verif_por: 'L. Sánchez Albújar',
+    efic_verif_por: '',
     efic_fecha: '',
     efic_obs: '',
   });
@@ -155,18 +156,38 @@ const Detail = ({ record, onClose }) => {
     setEditing(null);
     setPlanModal(null);
     setPlanRows(record?.planAccion || record?.plan_accion || PLAN_ACCION);
-    setTlCurrent(4);
-    setTlDates(['28/04', '04/05', '08/05', '12/05', '20/05', '', '']);
+    setTlCurrent(Number.isInteger(record?.timeline_step) ? record.timeline_step : 0);
+    setTlDates((record?.timeline_dates || []).concat(Array(TIMELINE_STEPS.length).fill('')).slice(0, TIMELINE_STEPS.length));
+    setVerif({
+      impl_desc: record?.verif_impl_desc || '',
+      impl_verif_por: record?.verif_impl_por || '',
+      impl_fecha: record?.verif_impl_fecha || '',
+      impl_eficacia_desde: record?.verif_impl_eficacia_desde || '',
+      efic_docs: record?.verif_efic_docs || '',
+      efic_eficaz: record?.verif_efic_eficaz || '',
+      efic_cierra: record?.verif_efic_cierra || '',
+      efic_verif_por: record?.verif_efic_por || '',
+      efic_fecha: record?.verif_efic_fecha || '',
+      efic_obs: record?.verif_efic_obs || '',
+    });
   }, [record?.id]);
+
+  const timelineEstado = (step) => (
+    step >= 6 ? 'cerrada' :
+    step >= 5 ? 'verificacion' :
+    step >= 3 ? 'ejecucion' :
+    step >= 2 ? 'analisis' :
+    'pendiente'
+  );
 
   const buildPayload = () => ({
     ...record,
+    estado: timelineEstado(tlCurrent),
+    implementacion: Math.round((tlCurrent / Math.max(1, TIMELINE_STEPS.length - 1)) * 100),
+    timeline_step: tlCurrent,
+    timeline_dates: tlDates,
     planAccion: planRows,
     verificacion: verif,
-    timeline: {
-      current: tlCurrent,
-      dates: tlDates,
-    },
   });
 
   const handleSave = async () => {
@@ -182,8 +203,9 @@ const Detail = ({ record, onClose }) => {
 
   if (!record) return null;
   const isOpen = !!record;
-  const ncDefault = record.nc || 'Descripción completa de la no conformidad detectada durante la auditoría, con evidencias objetivas y referencias al procedimiento institucional aplicable.';
-  const accionInmDefault = 'Se solicitó a las cuatro escuelas profesionales completar el registro académico pendiente del semestre 2025-II en un plazo no mayor a 5 días hábiles. Se emitió comunicado interno CC-CALIDAD-2026-018 y se habilitó canal directo de soporte con SIGA.';
+  const historyRows = record.historial || [];
+  const ncDefault = record.nc || '';
+  const accionInmDefault = 'No aplica';
 
   return (
     <React.Fragment>
@@ -213,7 +235,7 @@ const Detail = ({ record, onClose }) => {
             { id: 'analisis', label: 'Análisis de causa', icon: 'tree' },
             { id: 'plan', label: 'Plan de acción', icon: 'list-checks', pill: planRows.length },
             { id: 'verif', label: 'Verificación', icon: 'shield-check' },
-            { id: 'hist', label: 'Historial', icon: 'history', pill: ACTIVITY.length },
+            { id: 'hist', label: 'Historial', icon: 'history', pill: historyRows.length },
           ].map(t => (
             <div key={t.id}
                  className={'dr-tab' + (tab === t.id ? ' active' : '')}
@@ -317,38 +339,23 @@ const Detail = ({ record, onClose }) => {
                 title="Acción inmediata (corrección)"
                 sectionKey="accion"
                 editingKey={editing} setEditing={setEditing}
-                onSave={handleSave}>
+                onSave={handleSave}
+                editable={false}>
                 {(isEdit) => (
                   <React.Fragment>
-                    {isEdit
-                      ? <textarea className="input-area" defaultValue={accionInmDefault} />
-                      : <div className="read-block">{accionInmDefault}</div>}
+                    <div className="read-block">{accionInmDefault}</div>
                     <div className="row3" style={{marginTop: 12}}>
                       <div className="field">
                         <label>Responsable asignado</label>
-                        {isEdit
-                          ? <window.ResponsableCombo value="M. Quispe Hurtado" onChange={()=>{}} />
-                          : <div className="input">
-                              <Icon name="users" size={13} className="ico" />
-                              <span style={{flex:1, color:'var(--heading)'}}>M. Quispe Hurtado</span>
-                            </div>}
+                        <div className="input readonly"><span>No aplica</span></div>
                       </div>
                       <div className="field">
                         <label>Fecha</label>
-                        <div className="input">
-                          <Icon name="calendar" size={13} className="ico" />
-                          <input type="text" defaultValue="" placeholder="dd / mm / yyyy"
-                                 readOnly={!isEdit}
-                                 style={{flex:1, border:0, outline:0, background:'transparent', font:'inherit', color: 'var(--heading)', minWidth: 0}} />
-                        </div>
+                        <div className="input readonly"><span>No aplica</span></div>
                       </div>
                       <div className="field">
                         <label>Estado</label>
-                        {isEdit
-                          ? <window.Combobox value="Completada" options={['Pendiente', 'En ejecución', 'Completada']} onChange={()=>{}} />
-                          : <div className="input">
-                              <span className="badge cerrada"><span className="d"></span>Completada</span>
-                            </div>}
+                        <div className="input readonly"><span>No aplica</span></div>
                       </div>
                     </div>
                   </React.Fragment>
@@ -561,7 +568,10 @@ const Detail = ({ record, onClose }) => {
                 Historial de actividad
               </h3>
               <div className="activity">
-                {ACTIVITY.map((a, i) => (
+                {historyRows.length === 0 && (
+                  <div className="combo-empty">Sin actividad registrada.</div>
+                )}
+                {historyRows.map((a, i) => (
                   <div key={i} className={'act ' + a.kind}>
                     <div className="ico"><Icon name={a.icon} size={14} /></div>
                     <div>
@@ -582,7 +592,6 @@ const Detail = ({ record, onClose }) => {
 
         <div className="dr-foot">
           <button className="btn"><Icon name="paperclip" size={13} />Adjuntar</button>
-          <button className="btn"><Icon name="msg" size={13} />Comentar</button>
           <div className="spacer"></div>
           <button className="btn">Guardar borrador</button>
           <button className="btn" onClick={handleExport} disabled={exporting}>

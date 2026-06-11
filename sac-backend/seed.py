@@ -19,23 +19,8 @@ USERS = [
     {"nombre": "Sara de los Milagros Navarro Coloma", "email": "snavarro@ucv.edu.pe", "rol": "directora_calidad", "campus": "LN"},
 ]
 
-SACS = [
-    {
-        "code": "03-2026-LN", "prioridad": "alta", "proceso": "Servicios Academicos",
-        "proceso_sgc": "Formacion Academica", "responsable": "M. Quispe Hurtado",
-        "descripcion": "Registros academicos sin actualizacion oportuna en SIGA",
-        "descripcion_sub": "Incumplimiento de plazo en 4 escuelas profesionales",
-        "fuente": "Auditoria interna", "fecha_registro": d(-36), "fecha_compromiso": d(21),
-        "estado": "ejecucion", "implementacion": 60, "eficacia": "pe",
-        "nc": "Durante la auditoria interna se evidencio que cuatro escuelas profesionales no actualizaron registros academicos dentro del plazo establecido.",
-    },
-]
-
-PLAN_BASE = [
-    ("Capacitar al personal responsable del proceso", "M. Quispe Hurtado", "completada"),
-    ("Definir control de seguimiento y alertas", "P. Cardenas Loyola", "proceso"),
-    ("Actualizar procedimiento y matriz de responsabilidades", "L. Sanchez Albujar", "pendiente"),
-]
+SACS = []
+PLAN_BASE = []
 
 
 def seed():

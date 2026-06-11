@@ -42,6 +42,7 @@ const AppProvider = ({ children }) => {
   const [saving, setSaving] = React.useState(false);
   const [creating, setCreating] = React.useState(false);
   const [exporting, setExporting] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
   const [error, setError] = React.useState('');
   const [selectedId, setSelectedId] = React.useState(null);
   const [selectedSac, setSelectedSac] = React.useState(null);
@@ -153,6 +154,24 @@ const AppProvider = ({ children }) => {
     }
   }, []);
 
+  const deleteSac = React.useCallback(async (id) => {
+    setDeleting(true);
+    setError('');
+    try {
+      await window.SacApi.deleteSac(id);
+      if (selectedId === id) {
+        setSelectedId(null);
+        setSelectedSac(null);
+      }
+      await loadSacs(filters);
+    } catch (err) {
+      setError(getErrorText(err));
+      throw err;
+    } finally {
+      setDeleting(false);
+    }
+  }, [filters, loadSacs, selectedId]);
+
   const login = React.useCallback(async (email, password) => {
     setError('');
     const payload = await window.SacApi.login(email, password);
@@ -183,6 +202,7 @@ const AppProvider = ({ children }) => {
     saving,
     creating,
     exporting,
+    deleting,
     error,
     setError,
     selectedId,
@@ -196,6 +216,7 @@ const AppProvider = ({ children }) => {
     createSac,
     updateSac,
     exportSac,
+    deleteSac,
     login,
     logout,
   };
