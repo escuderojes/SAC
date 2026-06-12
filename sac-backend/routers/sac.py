@@ -182,6 +182,13 @@ def plan_responsable(accion) -> str:
     return accion.responsable or getattr(accion, "resp", None) or ""
 
 
+def parse_detail_date(value, label: str):
+    try:
+        return parse_date(value)
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"{label}: fecha invalida. Use DD/MM/AAAA.")
+
+
 def renumber_active_sacs(session: Session, campus: str, year: int) -> None:
     suffix = f"-{year}-{campus}"
     rows = session.exec(
@@ -242,8 +249,8 @@ def sac_from_create(payload: SACCreate, session: Session, user: Usuario) -> SAC:
         accion_inm_fecha=parse_date(accion.get("fecha")) if accion.get("fecha") else None,
         analisis_causa=payload.analisis_causa or payload.analisis or "",
         analisis_whys=payload.analisis_whys or [],
-        timeline_step=0,
-        timeline_dates=payload.timeline_dates or [],
+        timeline_step=1,
+        timeline_dates=payload.timeline_dates or ["", date.today().strftime("%d/%m"), "", "", "", "", ""],
         creado_por=user.id,
     )
 
@@ -277,9 +284,13 @@ def apply_update(sac: SAC, payload: SACUpdate) -> List[str]:
         sac.accion_inm_responsable = accion.get("responsable", sac.accion_inm_responsable)
         if accion.get("fecha"):
             sac.accion_inm_fecha = parse_date(accion.get("fecha"))
-    if payload.analisis:
+    if payload.analisis is not None:
         sac.analisis_causa = payload.analisis
-    if payload.verificacion:
+    if payload.analisis_causa is not None:
+        sac.analisis_causa = payload.analisis_causa
+    if payload.analisis_whys is not None:
+        sac.analisis_whys = payload.analisis_whys
+    if payload.verificacion is not None:
         ver = payload.verificacion
         key_map = {
             "impl_desc": "verif_impl_desc",
@@ -295,7 +306,7 @@ def apply_update(sac: SAC, payload: SACUpdate) -> List[str]:
         }
         for source, target in key_map.items():
             if source in ver:
-                value = parse_date(ver[source]) if "fecha" in source and ver[source] else ver[source]
+                value = parse_detail_date(ver[source], source) if "fecha" in source else ver[source]
                 setattr(sac, target, value)
     if sac.estado == "cerrada" and not sac.fecha_cierre:
         sac.fecha_cierre = date.today()
@@ -356,7 +367,7 @@ def list_sacs(
 
     total = session.exec(select(func.count()).select_from(stmt.subquery())).one()
     rows = session.exec(
-        stmt.order_by(SAC.fecha_registro.desc()).offset((page - 1) * page_size).limit(page_size)
+        stmt.order_by(SAC.code.asc()).offset((page - 1) * page_size).limit(page_size)
     ).all()
     return PaginatedSAC(items=[list_item(row) for row in rows], total=total, page=page, pages=pages_for(total, page_size))
 

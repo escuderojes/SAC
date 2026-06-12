@@ -158,12 +158,38 @@ const ResponsableCombo = (props) => (
   />
 );
 
+const pad2 = (n) => String(n).padStart(2, '0');
+
+const uiDateToIso = (value) => {
+  if (!value || typeof value !== 'string') return '';
+  const ui = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (ui) {
+    const day = Number(ui[1]);
+    const month = Number(ui[2]);
+    const year = Number(ui[3]);
+    const date = new Date(year, month - 1, day);
+    if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+      return `${year}-${pad2(month)}-${pad2(day)}`;
+    }
+    return '';
+  }
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return value;
+  return '';
+};
+
+const isoDateToUi = (value) => {
+  if (!value) return '';
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return iso ? `${iso[3]}/${iso[2]}/${iso[1]}` : '';
+};
+
 const DateField = ({ value, onChange, placeholder = 'DD/MM/AAAA' }) => (
-  <div className="input">
+  <div className="input date-input">
     <Icon name="calendar" size={13} className="ico" />
-    <input type="text"
-           value={value || ''}
-           onChange={e => onChange && onChange(e.target.value)}
+    <input type="date"
+           value={uiDateToIso(value || '')}
+           onChange={e => onChange && onChange(isoDateToUi(e.target.value))}
            placeholder={placeholder}
            style={{flex:1, border:0, outline:0, background:'transparent', font:'inherit', color: 'var(--heading)', minWidth: 0}} />
   </div>
@@ -186,4 +212,4 @@ const YesNoCheck = ({ value, onChange, label }) => (
   </div>
 );
 
-Object.assign(window, { Combobox, ResponsableCombo, DateField, YesNoCheck });
+Object.assign(window, { Combobox, ResponsableCombo, DateField, YesNoCheck, uiDateToIso, isoDateToUi });

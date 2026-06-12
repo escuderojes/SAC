@@ -5,16 +5,9 @@ from sqlmodel import Session
 from auth import get_current_user
 from database import get_session
 from models import SAC, Usuario
-from services.word_export import build_docx
+from services.word_export import area_abbr, build_docx
 
 router = APIRouter(prefix="/api/sac", tags=["export"])
-
-
-def area_abbr(area: str) -> str:
-    words = [w for w in (area or "").replace("&", " ").replace("-", " ").split() if w]
-    skip = {"DE", "DEL", "LA", "LAS", "LOS", "Y", "EN"}
-    letters = [w[0] for w in words if w.upper() not in skip]
-    return "".join(letters[:5]).upper() or "AREA"
 
 
 @router.get("/{sac_id}/export")

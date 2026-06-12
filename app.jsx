@@ -27,6 +27,7 @@ const App = () => {
   } = window.useAppContext();
   const [tweaks, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
   const [active, setActive] = React.useState('monitoreo');
+  const suppressSelectUntil = React.useRef(0);
 
   React.useEffect(() => {
     const preset = ACCENT_PRESETS[tweaks.accent] || ACCENT_PRESETS['Azul'];
@@ -46,7 +47,12 @@ const App = () => {
   }, [active]);
 
   const isRegistro = active === 'registro';
-  const selected = active === 'monitoreo' ? selectedSac : null;
+  const isNomenclaturas = active === 'nomenclaturas';
+  const selected = active === 'monitoreo' && selectedId ? selectedSac : null;
+  const closeDetail = () => {
+    suppressSelectUntil.current = Date.now() + 350;
+    setSelectedId(null);
+  };
 
   if (!token) {
     return <LoginPage />;
@@ -60,10 +66,15 @@ const App = () => {
           campus={filters.campus}
           user={user}
           onLogout={logout}
-          title={isRegistro ? 'Nueva Solicitud de Accion Correctiva' : 'Monitoreo de Acciones Correctivas'}
+          title={isRegistro ? 'Nueva Solicitud de Accion Correctiva'
+                 : isNomenclaturas ? 'Nomenclaturas de Areas'
+                 : 'Monitoreo de Acciones Correctivas'}
           subtitle={isRegistro ? 'Registro inicial de no conformidad y planificacion de acciones'
-                                : 'Gestion, seguimiento y cierre de solicitudes SAC'}
-          crumb={isRegistro ? 'Calidad / Acciones correctivas / Registro' : 'Calidad / Acciones correctivas'}
+                    : isNomenclaturas ? 'Consulta de abreviaturas usadas en los nombres de archivo'
+                    : 'Gestion, seguimiento y cierre de solicitudes SAC'}
+          crumb={isRegistro ? 'Calidad / Acciones correctivas / Registro'
+                 : isNomenclaturas ? 'Calidad / Catalogos / Nomenclaturas'
+                 : 'Calidad / Acciones correctivas'}
         />
         <div className="content">
           {isRegistro ? (
@@ -71,17 +82,22 @@ const App = () => {
               onCancel={() => setActive('monitoreo')}
               onSubmit={() => setActive('monitoreo')}
             />
+          ) : isNomenclaturas ? (
+            <Nomenclaturas />
           ) : (
             <React.Fragment>
               {tweaks.showAlerts && <AlertsBanner />}
               <KPIs />
               <Filters filters={filters} setFilters={setFilters} />
-              <Table rows={sacs} selectedId={selectedId} onSelect={setSelectedId} />
+              <Table rows={sacs} selectedId={selectedId} onSelect={(id) => {
+                if (Date.now() < suppressSelectUntil.current) return;
+                if (!selectedId) setSelectedId(id);
+              }} />
             </React.Fragment>
           )}
         </div>
       </div>
-      <Detail record={selected} onClose={() => setSelectedId(null)} />
+      <Detail record={selected} onClose={closeDetail} />
 
       <window.TweaksPanel title="Tweaks">
         <window.TweakSection label="Apariencia">
@@ -101,9 +117,9 @@ const App = () => {
         <window.TweakSection label="Navegacion">
           <window.TweakRadio
             label="Pantalla"
-            value={active === 'registro' ? 'Registro' : 'Monitoreo'}
-            options={['Monitoreo', 'Registro']}
-            onChange={v => setActive(v === 'Registro' ? 'registro' : 'monitoreo')}
+            value={active === 'registro' ? 'Registro' : active === 'nomenclaturas' ? 'Nomenclaturas' : 'Monitoreo'}
+            options={['Monitoreo', 'Registro', 'Nomenclaturas']}
+            onChange={v => setActive(v === 'Registro' ? 'registro' : v === 'Nomenclaturas' ? 'nomenclaturas' : 'monitoreo')}
           />
         </window.TweakSection>
         <window.TweakSection label="Composicion">

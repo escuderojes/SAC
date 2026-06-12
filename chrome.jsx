@@ -4,6 +4,7 @@ const Sidebar = ({ active, setActive }) => {
   const items = [
     { id: 'registro',    label: 'Registro SAC',  icon: 'file-plus' },
     { id: 'monitoreo',   label: 'Monitoreo SAC', icon: 'list-checks', count: 24 },
+    { id: 'nomenclaturas', label: 'Nomenclaturas', icon: 'list' },
   ];
   return (
     <aside className="sidebar">

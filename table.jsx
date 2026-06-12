@@ -26,6 +26,8 @@ const Table = ({ rows, selectedId, onSelect }) => {
   const loading = ctx.loading;
   const error = ctx.error;
   const [menuOpen, setMenuOpen] = React.useState(null);
+  const [menuPos, setMenuPos] = React.useState(null);
+  const [deleteTarget, setDeleteTarget] = React.useState(null);
 
   React.useEffect(() => {
     const close = () => setMenuOpen(null);
@@ -199,22 +201,38 @@ const Table = ({ rows, selectedId, onSelect }) => {
                       <button className="icon-btn" title="Historial">
                         <Icon name="history" size={15} />
                       </button>
-                      <div style={{position:'relative'}}>
-                        <button className="icon-btn" title="Mas opciones" onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === r.id ? null : r.id); }}>
+                      <div>
+                        <button className="icon-btn" title="Mas opciones" onClick={(e) => {
+                          e.stopPropagation();
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const menuHeight = 48;
+                          const spaceBelow = window.innerHeight - rect.bottom - 8;
+                          setMenuPos({
+                            right: window.innerWidth - rect.right,
+                            top: spaceBelow < menuHeight ? null : rect.bottom + 6,
+                            bottom: spaceBelow < menuHeight ? window.innerHeight - rect.top + 6 : null,
+                          });
+                          setMenuOpen(menuOpen === r.id ? null : r.id);
+                        }}>
                           <Icon name="more" size={15} />
                         </button>
-                        {menuOpen === r.id && (
-                          <div className="row-menu" onClick={(e) => e.stopPropagation()}>
+                        {menuOpen === r.id && menuPos && ReactDOM.createPortal(
+                          <div className="row-menu fixed"
+                               style={{
+                                 right: menuPos.right,
+                                 top: menuPos.top == null ? 'auto' : menuPos.top,
+                                 bottom: menuPos.bottom == null ? 'auto' : menuPos.bottom,
+                               }}
+                               onClick={(e) => e.stopPropagation()}>
                             <button className="danger" onClick={() => {
                               setMenuOpen(null);
-                              if (window.confirm(`¿Eliminar ${r.codigo || 'esta SAC'}? Esta accion renumerara las SAC restantes.`)) {
-                                ctx.deleteSac(r.id).catch(() => {});
-                              }
+                              setDeleteTarget(r);
                             }}>
                               <Icon name="x" size={13} />
                               Eliminar SAC
                             </button>
-                          </div>
+                          </div>,
+                          document.body
                         )}
                       </div>
                     </div>
@@ -234,6 +252,38 @@ const Table = ({ rows, selectedId, onSelect }) => {
           <button title="Siguiente"><Icon name="chev-right" size={13} /></button>
         </div>
       </div>
+      {deleteTarget && (
+        <div className="modal-scrim show confirm-scrim" onClick={(e) => { if (e.target === e.currentTarget) setDeleteTarget(null); }}>
+          <div className="modal-card confirm-card" role="dialog" aria-modal="true">
+            <div className="modal-head">
+              <div className="ico"><Icon name="alert" size={16} /></div>
+              <div>
+                <div className="ttl">Eliminar SAC</div>
+                <div className="sub">Esta accion renumerara las SAC restantes.</div>
+              </div>
+              <button className="modal-close" onClick={() => setDeleteTarget(null)} title="Cerrar">
+                <Icon name="x" size={16} />
+              </button>
+            </div>
+            <div className="modal-body">
+              ¿Deseas eliminar {deleteTarget.codigo || 'esta SAC'}?
+            </div>
+            <div className="modal-foot">
+              <button className="btn" onClick={() => setDeleteTarget(null)}>
+                <Icon name="x" size={13} />Cancelar
+              </button>
+              <div style={{flex:1}}></div>
+              <button className="btn primary" onClick={() => {
+                const target = deleteTarget;
+                setDeleteTarget(null);
+                ctx.deleteSac(target.id).catch(() => {});
+              }}>
+                <Icon name="check" size={13} stroke={2.6} />Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

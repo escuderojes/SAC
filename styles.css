@@ -557,8 +557,20 @@ table.sac tbody tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--blu
 .eficacia.pe { background: var(--gray-bg); color: var(--gray-tx); }
 
 .row-actions { display: flex; gap: 2px; }
-.row-actions .icon-btn { width: 28px; height: 28px; border: 0; background: transparent; }
-.row-actions .icon-btn:hover { background: var(--bg-2); color: var(--blue-700); }
+.row-actions .icon-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--blue-600);
+  background: var(--blue-600);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(37,99,235,0.18);
+}
+.row-actions .icon-btn:hover {
+  background: var(--blue-700);
+  color: #fff;
+  border-color: var(--blue-700);
+  transform: translateY(-1px);
+}
 
 .pager {
   display: flex; align-items: center; gap: 12px;
@@ -695,6 +707,19 @@ table.sac tbody tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--blu
   color: inherit;
   cursor: pointer;
   transition: transform 120ms ease;
+}
+.tl-step.disabled {
+  cursor: not-allowed;
+  opacity: .48;
+}
+.tl-step.disabled .tl-dot {
+  filter: grayscale(1);
+}
+.confirm-scrim {
+  z-index: 80;
+}
+.confirm-card {
+  max-width: 420px;
 }
 .tl-step:hover .tl-dot {
   transform: scale(1.08);
@@ -868,6 +893,165 @@ textarea.input-area:focus, input.input-line:focus {
 .why.root .num { background: var(--green); color: #fff; }
 .why.root .txt { color: var(--green-tx); font-weight: 600; }
 
+/* === Nomenclaturas === */
+.nomen-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.nomen-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 18px;
+}
+.nomen-toolbar h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  color: var(--heading);
+}
+.nomen-toolbar h3 .ico {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  background: var(--blue-50);
+  color: var(--blue-700);
+}
+.nomen-sub {
+  margin: 6px 0 0;
+  color: var(--text-2);
+  font-size: 12px;
+}
+.nomen-actions {
+  min-width: 560px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+.nomen-search {
+  width: 310px;
+  height: 38px;
+}
+.nomen-search input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--heading);
+  min-width: 0;
+}
+.nomen-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #F8FAFC;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
+}
+.nomen-tabs button {
+  height: 28px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  padding: 0 11px;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.nomen-tabs button:hover {
+  background: #EEF2FF;
+  color: var(--blue-700);
+}
+.nomen-tabs button.active {
+  background: #fff;
+  color: var(--blue-700);
+  box-shadow: var(--shadow-sm);
+}
+.nomen-table-wrap {
+  padding: 0;
+  overflow: hidden;
+}
+.nomen-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 12.5px;
+}
+.nomen-table th {
+  text-align: left;
+  padding: 11px 14px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.55px;
+  color: var(--text-2);
+  background: #F8FAFC;
+  border-bottom: 1px solid var(--border);
+}
+.nomen-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-2);
+  color: var(--text);
+  vertical-align: middle;
+}
+.nomen-table tr:hover td {
+  background: #FBFDFF;
+}
+.abbr-chip {
+  display: inline-flex;
+  min-width: 42px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 9px;
+  border-radius: 7px;
+  background: var(--blue-50);
+  color: var(--blue-800);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--blue-100);
+}
+.area-name {
+  font-weight: 600;
+  color: var(--heading);
+}
+.type-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.type-pill.programa {
+  background: #EEF2FF;
+  color: #4338CA;
+}
+.type-pill.administrativo {
+  background: #ECFDF5;
+  color: #047857;
+}
+.nomen-empty {
+  padding: 28px !important;
+  text-align: center;
+  color: var(--text-3) !important;
+}
+
 /* Plan de acción mini table */
 .mini-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; }
 .mini-table th {
@@ -1021,14 +1205,16 @@ textarea.input-area:focus, input.input-line:focus {
 .edit-icon {
   width: 28px; height: 28px;
   border-radius: 7px;
-  background: var(--bg-2);
-  color: var(--text-2);
-  border: 0; cursor: pointer;
+  background: var(--blue-600);
+  color: #fff;
+  border: 1px solid var(--blue-600);
+  box-shadow: 0 2px 6px rgba(37,99,235,0.18);
+  cursor: pointer;
   display: grid; place-items: center;
   transition: all 120ms ease;
 }
-.edit-icon:hover { background: var(--blue-50); color: var(--blue-700); }
-.edit-icon.active { background: var(--blue-600); color: #fff; }
+.edit-icon:hover { background: var(--blue-700); color: #fff; border-color: var(--blue-700); transform: translateY(-1px); }
+.edit-icon.active { background: var(--blue-700); color: #fff; border-color: var(--blue-700); }
 .edit-banner {
   margin-top: 10px;
   display: flex; align-items: center; gap: 8px;
@@ -1368,6 +1554,10 @@ textarea.input-area:focus, input.input-line:focus {
   box-shadow: var(--shadow-lg);
   padding: 4px;
   z-index: 30;
+}
+.row-menu.fixed {
+  position: fixed;
+  z-index: 5000;
 }
 .row-menu button {
   width: 100%;

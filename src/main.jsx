@@ -19,6 +19,7 @@ const init = async () => {
   await import('../table.jsx');
   await import('../detail.jsx');
   await import('../registro.jsx');
+  await import('../nomenclaturas.jsx');
   await import('../login.jsx');
   await import('../app.jsx');
 };

@@ -184,3 +184,18 @@ window.AREAS_RESPONSABLES = [
 window.AREAS_LIST = window.AREAS_RESPONSABLES.map(item => item.area);
 window.RESPONSABLES_LIST = Array.from(new Set(window.AREAS_RESPONSABLES.map(item => item.responsable)));
 window.findAreaResponsable = (area) => window.AREAS_RESPONSABLES.find(item => item.area === area);
+window.areaAbbr = (area) => {
+  const text = String(area || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+  if (text.includes('INVESTIG')) return 'INV';
+  if (['CAP', 'CID', 'CIS', 'SSOMA'].includes(text)) return text;
+  const skip = new Set(['DE', 'DEL', 'LA', 'LAS', 'LOS', 'Y', 'EN', 'AREA', 'UNIDAD']);
+  const generic = new Set(['DIRECCION', 'OFICINA', 'PROGRAMA']);
+  const words = text.replace(/&/g, ' ').replace(/-/g, ' ').split(/\s+/).filter(Boolean);
+  const keywords = words.filter(w => !skip.has(w) && !generic.has(w));
+  if (keywords.length === 1) return keywords[0].slice(0, 3);
+  const initials = keywords.map(w => w[0]).join('').slice(0, 5);
+  return initials || 'AREA';
+};

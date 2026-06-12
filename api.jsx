@@ -47,7 +47,10 @@ const request = async (path, options = {}) => {
     throw error;
   }
 
-  if (options.blob) return response.blob();
+  if (options.blob) {
+    const blob = await response.blob();
+    return { blob, headers: response.headers };
+  }
   if (response.status === 204) return null;
   return contentType.includes('application/json') ? response.json() : response.text();
 };

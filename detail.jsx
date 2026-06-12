@@ -1,6 +1,6 @@
 /* Detail drawer */
 
-const Timeline = ({ current, dates, onSelect }) => {
+const Timeline = ({ current, dates, onSelect, canSelect }) => {
   return (
     <div className="timeline-card">
       <div className="tl-title">
@@ -17,12 +17,14 @@ const Timeline = ({ current, dates, onSelect }) => {
       <div className="timeline">
         {TIMELINE_STEPS.map((s, i) => {
           const status = i < current ? 'done' : i === current ? 'cur' : '';
+          const allowed = canSelect ? canSelect(i) : true;
           return (
             <button key={s.id}
                     type="button"
-                    className={'tl-step ' + status}
-                    onClick={() => onSelect && onSelect(i)}
-                    title={'Marcar etapa: ' + s.label}>
+                    className={'tl-step ' + status + (!allowed ? ' disabled' : '')}
+                    disabled={!allowed}
+                    onClick={() => allowed && onSelect && onSelect(i)}
+                    title={allowed ? 'Marcar etapa: ' + s.label : 'Complete las etapas previas antes de avanzar.'}>
               <div className="tl-dot">
                 <Icon name={status === 'done' ? 'check' : s.icon} size={14} stroke={2.2} />
               </div>
@@ -61,13 +63,13 @@ const EditableSection = ({ icon, iconTone, title, sectionKey, editingKey, setEdi
       {editing && (
         <div className="edit-banner">
           <Icon name="edit" size={12} />
-          Editando esta sección — los cambios no se guardan hasta confirmar.
+          Editando esta sección — los cambios quedan pendientes hasta aplicar.
           <div className="spacer"></div>
           <button className="btn sm" onClick={() => { onCancel && onCancel(); setEditing(null); }}>
-            <Icon name="x" size={12} />Cancelar edición
+            <Icon name="x" size={12} />Cerrar edición
           </button>
           <button className="btn sm primary" onClick={() => { onSave && onSave(); setEditing(null); }}>
-            <Icon name="check" size={12} stroke={2.6} />Guardar cambios
+            <Icon name="check" size={12} stroke={2.6} />Dejar pendiente
           </button>
         </div>
       )}
@@ -90,13 +92,11 @@ const KV = ({ k, v, edit, type = 'text', options, mono, highlight, onChange, sea
           <window.ResponsableCombo value={v} onChange={onChange} />
         </div>
       ) : type === 'date' ? (
-        <div className="input" style={{marginTop:4}}>
-          <Icon name="calendar" size={13} className="ico" />
-          <input type="text" defaultValue={v} placeholder="DD/MM/AAAA"
-                 style={{flex:1, border:0, outline:0, background:'transparent', font:'inherit', color: 'var(--heading)', minWidth: 0}} />
+        <div style={{marginTop:4}}>
+          <window.DateField value={v || ''} onChange={onChange} />
         </div>
       ) : (
-        <input className="input-line" defaultValue={v} style={{marginTop:4}} onChange={e => onChange && onChange(e.target.value)} />
+        <input className="input-line" value={v || ''} style={{marginTop:4}} onChange={e => onChange && onChange(e.target.value)} />
       )
     ) : (
       <div className={'v' + (mono ? ' mono' : '')}>{v}</div>
@@ -126,6 +126,90 @@ const toUiDate = (value) => {
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
 };
+const estadoLabelByValue = (value) => (window.ESTADOS_LIST || []).find(e => e.value === value)?.label || value || '';
+const prioridadLabel = (value) => value === 'alta' ? 'Alta' : value === 'media' ? 'Media' : value === 'baja' ? 'Baja' : value || 'Media';
+const prioridadValue = (label) => (window.PRIORIDADES_LIST || []).find(p => p.label === label)?.value || String(label || 'media').toLowerCase();
+const initialsOf = (name) => String(name || '').trim().split(/\s+/).filter(Boolean).reduce((acc, part, idx, arr) => {
+  if (idx === 0 || idx === arr.length - 1) return acc + (part[0] || '');
+  return acc;
+}, '').slice(0, 2).toUpperCase();
+const parseUiDateValue = (value) => {
+  if (!value || typeof value !== 'string') return null;
+  let match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (match) return new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+  match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return null;
+};
+const maxPlanDateLabel = (rows) => {
+  const dates = rows
+    .map(row => ({ raw: row.fecha || '', date: parseUiDateValue(row.fecha || '') }))
+    .filter(item => item.date && !Number.isNaN(item.date.getTime()))
+    .sort((a, b) => b.date - a.date);
+  return dates[0]?.raw || '';
+};
+const hasWhysContent = (rows) => rows.some(row => {
+  const text = String(row.txt || '').trim();
+  return text && !/^registre|^documente/i.test(text);
+});
+const hasAnalysisContent = (rows, freeText = '', mode = 'whys') => (
+  mode === 'free'
+    ? !!String(freeText || '').trim()
+    : hasWhysContent(rows)
+);
+const hasPlanContent = (rows) => rows.some(row =>
+  String(row.desc || '').trim() && String(row.resp || row.responsable || '').trim() && String(row.fecha || '').trim()
+);
+const hasImplementationContent = (verif) => String(verif.impl_desc || '').trim() || String(verif.impl_verif_por || '').trim() || String(verif.impl_fecha || '').trim();
+const hasVerificationContent = (verif) => String(verif.efic_docs || '').trim() || String(verif.efic_eficaz || '').trim() || String(verif.efic_cierra || '').trim();
+const whysFromRecord = (record) => {
+  const rows = Array.isArray(record?.analisis_whys) && record.analisis_whys.length ? record.analisis_whys : WHYS;
+  return rows.map((row, index) => ({
+    n: row.n || WHYS[index]?.n || `Por que ${index + 1}`,
+    txt: row.txt || '',
+    root: !!row.root || index === 4,
+  }));
+};
+const timelineEstadoFromStep = (step) => (
+  step >= 6 ? 'cerrada' :
+  step >= 5 ? 'verificacion' :
+  step >= 3 ? 'ejecucion' :
+  step >= 2 ? 'analisis' :
+  'pendiente'
+);
+const normalizedPlanPayload = (rows) => rows.map((row, index) => ({
+  n: row.n || index + 1,
+  orden: row.orden || row.n || index + 1,
+  desc: row.desc || '',
+  responsable: row.responsable || row.resp || '',
+  responsable_av: row.responsable_av || row.av || '',
+  av: row.av || row.responsable_av || '',
+  fecha: row.fecha || '',
+  estado: row.estado || 'pendiente',
+}));
+const analysisFromWhys = (rows) => rows.map(row => `${row.n}: ${row.txt || ''}`).join('\n');
+const buildDetailPayload = ({ record, draft, whyRows, analysisText, causeView, tlCurrent, tlDates, planRows, verif }) => ({
+  proceso: draft.proceso || '',
+  procesoSGC: draft.procesoSGC || '',
+  fuente: draft.fuente || '',
+  norma: draft.norma || 'ISO 9001:2015',
+  clausula: draft.clausula || '',
+  originador: draft.originador || '',
+  fechaReg: draft.fechaReg || '',
+  prioridad: prioridadValue(draft.prioridad),
+  responsable: draft.responsable || '',
+  responsable_short: initialsOf(draft.responsable || ''),
+  nc: draft.nc || record?.nc || record?.descripcion || '',
+  descripcion: (draft.nc || record?.nc || record?.descripcion || '').slice(0, 120),
+  analisis: causeView === 'free' ? (analysisText || '') : analysisFromWhys(whyRows),
+  analisis_whys: whyRows,
+  estado: timelineEstadoFromStep(tlCurrent),
+  implementacion: Math.round((tlCurrent / Math.max(1, TIMELINE_STEPS.length - 1)) * 100),
+  timeline_step: tlCurrent,
+  timeline_dates: tlDates,
+  planAccion: normalizedPlanPayload(planRows),
+  verificacion: verif,
+});
 
 const Detail = ({ record, onClose }) => {
   const { updateSac, exportSac, saving, exporting } = window.useAppContext();
@@ -134,13 +218,22 @@ const Detail = ({ record, onClose }) => {
   const [causeView, setCauseView] = React.useState('whys');
   const [planRows, setPlanRows] = React.useState([]);
   const [planModal, setPlanModal] = React.useState(null);
-  const [tlCurrent, setTlCurrent] = React.useState(0);
+  const [draft, setDraft] = React.useState({});
+  const [whyRows, setWhyRows] = React.useState(whysFromRecord(null));
+  const [analysisText, setAnalysisText] = React.useState('');
+  const [appliedSignature, setAppliedSignature] = React.useState('');
+  const [confirmClose, setConfirmClose] = React.useState(false);
+  const prevRecordId = React.useRef(null);
+  const [tlCurrent, setTlCurrent] = React.useState(1);
   const [tlDates, setTlDates] = React.useState(Array(TIMELINE_STEPS.length).fill(''));
   const handleTlSelect = (i) => {
+    if (!canSelectTimeline(i)) return;
     setTlCurrent(i);
-    // auto-stamp today's date on the selected step if empty
     const today = new Date().toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit' });
-    setTlDates(prev => prev.map((d, idx) => idx === i && !d ? today : d));
+    setTlDates(prev => prev.map((d, idx) => {
+      if (idx > i) return '';
+      return d || today;
+    }));
   };
   const [verif, setVerif] = React.useState({
     impl_desc: '',
@@ -155,19 +248,48 @@ const Detail = ({ record, onClose }) => {
     efic_obs: '',
   });
   const setV = (k, v) => setVerif(s => ({...s, [k]: v}));
+  const setD = (k, v) => setDraft(s => ({...s, [k]: v}));
+  const setWhy = (index, value) => setWhyRows(rows => rows.map((row, i) => i === index ? {...row, txt: value} : row));
+  const canSelectTimeline = (index) => {
+    if (index <= tlCurrent) return true;
+    if (index >= 3 && !hasAnalysisContent(whyRows, analysisText, causeView)) return false;
+    if (index >= 4 && !hasPlanContent(planRows)) return false;
+    if (index >= 5 && !hasImplementationContent(verif)) return false;
+    if (index >= 6 && !hasVerificationContent(verif)) return false;
+    return true;
+  };
 
   React.useEffect(() => {
-    setTab('general');
-    setEditing(null);
-    setPlanModal(null);
-    setPlanRows((record?.planAccion || record?.plan_accion || PLAN_ACCION).map(row => ({
+    if (!record) return;
+    if (prevRecordId.current !== record.id) {
+      prevRecordId.current = record.id;
+      setTab('general');
+      setEditing(null);
+      setPlanModal(null);
+    }
+    const nextPlanRows = (record?.planAccion || record?.plan_accion || PLAN_ACCION).map(row => ({
       ...row,
       resp: row.resp || row.responsable || '',
       fecha: toUiDate(row.fecha),
-    })));
-    setTlCurrent(Number.isInteger(record?.timeline_step) ? record.timeline_step : 0);
-    setTlDates((record?.timeline_dates || []).concat(Array(TIMELINE_STEPS.length).fill('')).slice(0, TIMELINE_STEPS.length));
-    setVerif({
+    }));
+    const nextDraft = {
+      proceso: record?.proceso || '',
+      procesoSGC: record?.procesoSGC || '',
+      fuente: record?.fuente || '',
+      norma: record?.norma || 'ISO 9001:2015',
+      clausula: record?.clausula || '',
+      originador: record?.originador || '',
+      fechaReg: record?.fechaReg || '',
+      prioridad: prioridadLabel(record?.prio || record?.prioridad),
+      responsable: record?.responsable || '',
+      nc: record?.nc || record?.descripcion || '',
+    };
+    const nextWhyRows = whysFromRecord(record);
+    const nextAnalysisText = record?.analisis_causa || record?.analisis || '';
+    const nextCauseView = nextAnalysisText && nextAnalysisText !== analysisFromWhys(nextWhyRows) ? 'free' : 'whys';
+    const nextTlCurrent = Number.isInteger(record?.timeline_step) ? record.timeline_step : 1;
+    const nextTlDates = (record?.timeline_dates || []).concat(Array(TIMELINE_STEPS.length).fill('')).slice(0, TIMELINE_STEPS.length);
+    const nextVerif = {
       impl_desc: record?.verif_impl_desc || '',
       impl_verif_por: record?.verif_impl_por || '',
       impl_fecha: record?.verif_impl_fecha || '',
@@ -178,60 +300,85 @@ const Detail = ({ record, onClose }) => {
       efic_verif_por: record?.verif_efic_por || '',
       efic_fecha: record?.verif_efic_fecha || '',
       efic_obs: record?.verif_efic_obs || '',
-    });
-  }, [record?.id]);
+    };
+    setPlanRows(nextPlanRows);
+    setDraft(nextDraft);
+    setWhyRows(nextWhyRows);
+    setAnalysisText(nextAnalysisText);
+    setCauseView(nextCauseView);
+    setTlCurrent(nextTlCurrent);
+    setTlDates(nextTlDates);
+    setVerif(nextVerif);
+    setAppliedSignature(JSON.stringify(buildDetailPayload({
+      record,
+      draft: nextDraft,
+      whyRows: nextWhyRows,
+      analysisText: nextAnalysisText,
+      causeView: nextCauseView,
+      tlCurrent: nextTlCurrent,
+      tlDates: nextTlDates,
+      planRows: nextPlanRows,
+      verif: nextVerif,
+    })));
+  }, [record]);
 
-  const timelineEstado = (step) => (
-    step >= 6 ? 'cerrada' :
-    step >= 5 ? 'verificacion' :
-    step >= 3 ? 'ejecucion' :
-    step >= 2 ? 'analisis' :
-    'pendiente'
-  );
+  const timelineEstado = timelineEstadoFromStep;
 
-  const normalizedPlanRows = () => planRows.map((row, index) => ({
-    n: row.n || index + 1,
-    orden: row.orden || row.n || index + 1,
-    desc: row.desc || '',
-    responsable: row.responsable || row.resp || '',
-    responsable_av: row.responsable_av || row.av || '',
-    av: row.av || row.responsable_av || '',
-    fecha: row.fecha || '',
-    estado: row.estado || 'pendiente',
-  }));
-
-  const buildPayload = () => ({
-    estado: timelineEstado(tlCurrent),
-    implementacion: Math.round((tlCurrent / Math.max(1, TIMELINE_STEPS.length - 1)) * 100),
-    timeline_step: tlCurrent,
-    timeline_dates: tlDates,
-    planAccion: normalizedPlanRows(),
-    verificacion: verif,
-  });
+  const buildPayload = () => buildDetailPayload({ record, draft, whyRows, analysisText, causeView, tlCurrent, tlDates, planRows, verif });
+  const currentSignature = JSON.stringify(buildPayload());
+  const hasPendingChanges = !!appliedSignature && currentSignature !== appliedSignature;
 
   const handleSave = async () => {
     if (!record?.id) return;
-    await updateSac(record.id, buildPayload());
+    const payload = buildPayload();
+    await updateSac(record.id, payload);
+    setAppliedSignature(JSON.stringify(payload));
     setEditing(null);
+  };
+
+  const requestClose = () => {
+    if (editing || hasPendingChanges) {
+      setConfirmClose(true);
+      return;
+    }
+    onClose();
+  };
+
+  const confirmDiscardAndClose = () => {
+    setConfirmClose(false);
+    setEditing(null);
+    onClose();
   };
 
   const handleExport = async () => {
     if (!record?.id) return;
-    await exportSac(record.id, record.code || record.codigo || record.id);
+    await exportSac(record.id, record.code || record.codigo || record.id, record.proceso || record.area || draft.proceso);
   };
 
   if (!record) return null;
   const isOpen = !!record;
   const historyRows = record.historial || [];
-  const ncDefault = record.nc || '';
+  const ncDefault = draft.nc || '';
   const accionInmDefault = 'No aplica';
+  const fechaCompDisplay = maxPlanDateLabel(planRows);
 
   return (
     <React.Fragment>
-      <div className={'scrim' + (isOpen ? ' show' : '')} onClick={onClose}></div>
+      <div
+        className={'scrim' + (isOpen ? ' show' : '')}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          requestClose();
+        }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+      ></div>
       <aside className={'drawer' + (isOpen ? ' show' : '')}>
         <div className="dr-head">
-          <button className="close" onClick={onClose} title="Cerrar"><Icon name="x" size={16} /></button>
+          <button className="close" onClick={requestClose} title="Cerrar"><Icon name="x" size={16} /></button>
           <div className="crumb">Detalle de Solicitud</div>
           <div className="code">SAC-{record.code}</div>
           <h2>{record.descripcion}</h2>
@@ -239,7 +386,7 @@ const Detail = ({ record, onClose }) => {
             <div className="item"><Icon name="folder" size={13} />{record.proceso}</div>
             <div className="item"><Icon name="users" size={13} />{record.responsable}</div>
             <div className="item"><Icon name="calendar" size={13} />Registro: {record.fechaReg}</div>
-            <div className="item"><Icon name="clock" size={13} />Compromiso: {record.fechaComp}</div>
+            <div className="item"><Icon name="clock" size={13} />Compromiso: {fechaCompDisplay || 'Sin plan'}</div>
           </div>
           <div className="tag-row">
             <span className="tag"><Icon name="shield" size={11} />ISO 9001:2015 — Cláusula {record.clausula || '8.7.1 / 10.2'}</span>
@@ -280,7 +427,7 @@ const Detail = ({ record, onClose }) => {
             </div>
             <div className="cell amber">
               <div className="k">Fecha compromiso</div>
-              <div className="v"><Icon name="clock" size={13} />{record.fechaComp}</div>
+              <div className="v"><Icon name="clock" size={13} />{fechaCompDisplay || 'Sin plan'}</div>
             </div>
             <div className="cell red">
               <div className="k">Responsable</div>
@@ -290,7 +437,7 @@ const Detail = ({ record, onClose }) => {
             </div>
           </div>
 
-          <Timeline current={tlCurrent} dates={tlDates} onSelect={handleTlSelect} />
+          <Timeline current={tlCurrent} dates={tlDates} onSelect={handleTlSelect} canSelect={canSelectTimeline} />
 
           {tab === 'general' && (
             <React.Fragment>
@@ -298,39 +445,36 @@ const Detail = ({ record, onClose }) => {
                 icon="doc"
                 title="Información general"
                 sectionKey="info"
-                editingKey={editing} setEditing={setEditing}
-                onSave={handleSave}>
+                editingKey={editing} setEditing={setEditing}>
                 {(isEdit) => (
                   <div className="kvs">
                     <KV k="Código SAC" v={'SAC-' + record.code} mono edit={isEdit} />
-                    <KV k="Área o unidad" v={record.proceso} edit={isEdit}
-                        type="combo" options={window.AREAS_LIST} />
-                    <KV k="Proceso del SGC" v={record.procesoSGC || 'Formación Académica'} edit={isEdit}
-                        type="combo" options={window.PROCESOS_SGC_LIST} />
-                    <KV k="Fuente de no conformidad" v={record.fuente} edit={isEdit}
-                        type="combo" options={window.FUENTES_LIST} />
-                    <KV k="Norma asociada" v={isEdit ? 'ISO 9001:2015' : <span className="tag-norma"><Icon name="shield" size={11} />ISO 9001:2015</span>} edit={isEdit}
-                        type="combo" options={['ISO 9001:2015', 'ISO 21001:2018', 'Binorma ISO 9001:2015 / ISO 21001:2018', 'ISO 45001:2018']} />
-                    <KV k="Cláusula / requisito" v={record.clausula || '8.7.1 / 10.2'} mono edit={isEdit} />
-                    <KV k="Originador" v={record.originador || 'Coord. de Calidad — Auditoría Interna 2026-I'} edit={isEdit} />
-                    <KV k="Fecha de registro" v={record.fechaReg} edit={isEdit} type="date" />
-                    <KV k="Fecha compromiso" v={record.fechaComp} edit={isEdit} type="date" highlight />
+                    <KV k="Área o unidad" v={draft.proceso} edit={isEdit}
+                        type="combo" options={window.AREAS_LIST} searchable onChange={v => setD('proceso', v)} />
+                    <KV k="Proceso del SGC" v={draft.procesoSGC} edit={isEdit}
+                        type="combo" options={window.PROCESOS_SGC_LIST} searchable onChange={v => setD('procesoSGC', v)} />
+                    <KV k="Fuente de no conformidad" v={draft.fuente} edit={isEdit}
+                        type="combo" options={window.FUENTES_LIST} searchable onChange={v => setD('fuente', v)} />
+                    <KV k="Norma asociada" v={isEdit ? draft.norma : <span className="tag-norma"><Icon name="shield" size={11} />{draft.norma || 'ISO 9001:2015'}</span>} edit={isEdit}
+                        type="combo" options={['ISO 9001:2015', 'ISO 21001:2018', 'Binorma ISO 9001:2015 / ISO 21001:2018', 'ISO 45001:2018']} onChange={v => setD('norma', v)} />
+                    <KV k="Cláusula / requisito" v={draft.clausula || '8.7.1 / 10.2'} mono edit={isEdit} onChange={v => setD('clausula', v)} />
+                    <KV k="Originador" v={draft.originador || 'Dirección de la Calidad'} edit={isEdit} onChange={v => setD('originador', v)} />
+                    <KV k="Fecha de registro" v={draft.fechaReg} edit={isEdit} type="date" onChange={v => setD('fechaReg', v)} />
+                    <KV k="Fecha compromiso" v={fechaCompDisplay || 'Sin plan de acción'} edit={false} highlight />
                     <KV k="Prioridad"
-                        v={isEdit ? (record.prio === 'alta' ? 'Alta' : record.prio === 'media' ? 'Media' : 'Baja')
+                        v={isEdit ? draft.prioridad
                                   : <span className={'badge ' + (record.prio === 'alta' ? 'noeficaz' : record.prio === 'media' ? 'analisis' : 'pendiente')}>
                                       <span className="d"></span>
-                                      {record.prio === 'alta' ? 'Alta' : record.prio === 'media' ? 'Media' : 'Baja'}
+                                      {draft.prioridad}
                                     </span>}
-                        edit={isEdit} type="combo" options={['Alta', 'Media', 'Baja']} />
+                        edit={isEdit} type="combo" options={['Alta', 'Media', 'Baja']} onChange={v => setD('prioridad', v)} />
                     <KV k="Estado"
-                        v={isEdit ? record.estadoLabel
-                                  : <span className={'badge ' + record.estado}><span className="d"></span>{record.estadoLabel}</span>}
-                        edit={isEdit} type="combo"
-                        options={window.ESTADOS_LIST.map(e => e.label)} />
+                        v={<span className={'badge ' + timelineEstado(tlCurrent)}><span className="d"></span>{estadoLabelByValue(timelineEstado(tlCurrent))}</span>}
+                        edit={false} />
                     <KV k="Responsable"
-                        v={isEdit ? record.responsable
-                                  : <span className="assignee"><span className="av">{record.responsableShort}</span>{record.responsable}</span>}
-                        edit={isEdit} type="responsable" />
+                        v={isEdit ? draft.responsable
+                                  : <span className="assignee"><span className="av">{record.responsableShort}</span>{draft.responsable}</span>}
+                        edit={isEdit} type="responsable" onChange={v => setD('responsable', v)} />
                   </div>
                 )}
               </EditableSection>
@@ -340,11 +484,10 @@ const Detail = ({ record, onClose }) => {
                 iconTone={{background:'var(--red-bg)', color:'var(--red-tx)'}}
                 title="Descripción de la no conformidad"
                 sectionKey="nc"
-                editingKey={editing} setEditing={setEditing}
-                onSave={handleSave}>
+                editingKey={editing} setEditing={setEditing}>
                 {(isEdit) => (
                   isEdit
-                    ? <textarea className="input-area" style={{minHeight:120}} defaultValue={ncDefault} />
+                    ? <textarea className="input-area" style={{minHeight:120}} value={ncDefault} onChange={e => setD('nc', e.target.value)} />
                     : <div className="nc-block">
                         <span className="lbl">Descripción</span>
                         {ncDefault}
@@ -358,7 +501,6 @@ const Detail = ({ record, onClose }) => {
                 title="Acción inmediata (corrección)"
                 sectionKey="accion"
                 editingKey={editing} setEditing={setEditing}
-                onSave={handleSave}
                 editable={false}>
                 {(isEdit) => (
                   <React.Fragment>
@@ -390,28 +532,36 @@ const Detail = ({ record, onClose }) => {
               title="Análisis de causa raíz"
               sectionKey="causa"
               editingKey={editing} setEditing={setEditing}
-              onSave={handleSave}
               headerExtras={
                 <div className="cause-toggle" style={{margin:0}}>
                   <button className={causeView === 'whys' ? 'on' : ''} onClick={() => setCauseView('whys')}>5 Por qués</button>
-                  <button className={causeView === 'fish' ? 'on' : ''} onClick={() => setCauseView('fish')}>Ishikawa</button>
+                  <button className={causeView === 'free' ? 'on' : ''} onClick={() => setCauseView('free')}>Análisis libre</button>
                 </div>
               }>
               {(isEdit) => (
                 <div className="cause-tree">
                   {causeView === 'whys' ? (
                     <div className="whys">
-                      {WHYS.map((w, i) => (
+                      {whyRows.map((w, i) => (
                         <div key={i} className={'why' + (w.root ? ' root' : '')}>
                           <span className="num">{w.n}</span>
                           {isEdit
-                            ? <input className="input-line" defaultValue={w.txt} />
+                            ? <input className="input-line" value={w.txt} onChange={e => setWhy(i, e.target.value)} />
                             : <span className="txt">{w.txt}</span>}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <Ishikawa />
+                    isEdit
+                      ? <textarea
+                          className="input-area"
+                          style={{minHeight: 180}}
+                          value={analysisText}
+                          onChange={e => setAnalysisText(e.target.value)}
+                          placeholder="Escriba el análisis de causa raíz de forma directa, sin usar la metodología de los 5 Porqués." />
+                      : <div className="read-block">
+                          {analysisText || <span style={{color:'var(--text-3)'}}>(sin análisis registrado)</span>}
+                        </div>
                   )}
                 </div>
               )}
@@ -462,12 +612,10 @@ const Detail = ({ record, onClose }) => {
                       <td>
                         <div className="row-actions" style={{justifyContent:'flex-end'}}>
                           <button className="icon-btn" title="Editar acción"
-                                  style={{width:28, height:28, border:0, background:'transparent'}}
                                   onClick={() => setPlanModal({ mode: 'edit', idx, row: {...p} })}>
                             <Icon name="edit" size={14} />
                           </button>
                           <button className="icon-btn" title="Eliminar acción"
-                                  style={{width:28, height:28, border:0, background:'transparent'}}
                                   onClick={() => setPlanRows(rows => rows.filter((_, i) => i !== idx).map((r, i) => ({...r, n: i + 1})))}>
                             <Icon name="x" size={14} />
                           </button>
@@ -493,8 +641,7 @@ const Detail = ({ record, onClose }) => {
               iconTone={{background:'var(--green-bg)', color:'var(--green-tx)'}}
               title="Verificación y cierre"
               sectionKey="verif"
-              editingKey={editing} setEditing={setEditing}
-              onSave={handleSave}>
+              editingKey={editing} setEditing={setEditing}>
               {(isEdit) => (
                 <React.Fragment>
                   {/* Sub-card 1 — Verificación de la implementación */}
@@ -516,7 +663,7 @@ const Detail = ({ record, onClose }) => {
                       <div className="field">
                         <label>Fecha</label>
                         {isEdit
-                          ? <div className="input"><Icon name="calendar" size={13} className="ico" /><input type="text" value={verif.impl_fecha} onChange={e => setV('impl_fecha', e.target.value)} placeholder="DD/MM/AAAA" style={{flex:1, border:0, outline:0, background:'transparent', font:'inherit', color: 'var(--heading)', minWidth: 0}} /></div>
+                          ? <window.DateField value={verif.impl_fecha} onChange={v => setV('impl_fecha', v)} />
                           : <div className="input"><Icon name="calendar" size={13} className="ico" /><span>{verif.impl_fecha}</span></div>}
                       </div>
                       <div className="field">
@@ -563,7 +710,7 @@ const Detail = ({ record, onClose }) => {
                       <div className="field">
                         <label>Fecha</label>
                         {isEdit
-                          ? <div className="input"><Icon name="calendar" size={13} className="ico" /><input type="text" value={verif.efic_fecha} onChange={e => setV('efic_fecha', e.target.value)} placeholder="DD/MM/AAAA" style={{flex:1, border:0, outline:0, background:'transparent', font:'inherit', color: 'var(--heading)', minWidth: 0}} /></div>
+                          ? <window.DateField value={verif.efic_fecha} onChange={v => setV('efic_fecha', v)} />
                           : <div className="input"><Icon name="calendar" size={13} className="ico" /><span style={{color: verif.efic_fecha ? 'var(--heading)' : 'var(--text-3)'}}>{verif.efic_fecha || 'Pendiente'}</span></div>}
                       </div>
                     </div>
@@ -619,7 +766,7 @@ const Detail = ({ record, onClose }) => {
           </button>
           <button className="btn primary" onClick={handleSave} disabled={saving}>
             {saving ? <span className="spinner"></span> : <Icon name="check" size={13} stroke={2.4} />}
-            Guardar cambios
+            Aplicar cambios
           </button>
         </div>
       </aside>
@@ -638,6 +785,34 @@ const Detail = ({ record, onClose }) => {
             setPlanModal(null);
           }}
         />
+      )}
+      {confirmClose && (
+        <div className="modal-scrim show confirm-scrim" onClick={(e) => { if (e.target === e.currentTarget) setConfirmClose(false); }}>
+          <div className="modal-card confirm-card" role="dialog" aria-modal="true">
+            <div className="modal-head">
+              <div className="ico"><Icon name="alert" size={16} /></div>
+              <div>
+                <div className="ttl">Cambios sin aplicar</div>
+                <div className="sub">Hay ediciones pendientes en esta SAC.</div>
+              </div>
+              <button className="modal-close" onClick={() => setConfirmClose(false)} title="Cerrar">
+                <Icon name="x" size={16} />
+              </button>
+            </div>
+            <div className="modal-body">
+              ¿Deseas salir sin aplicar los cambios?
+            </div>
+            <div className="modal-foot">
+              <button className="btn" onClick={() => setConfirmClose(false)}>
+                <Icon name="x" size={13} />No, continuar editando
+              </button>
+              <div style={{flex:1}}></div>
+              <button className="btn primary" onClick={confirmDiscardAndClose}>
+                <Icon name="check" size={13} stroke={2.6} />Sí, salir
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </React.Fragment>
   );
@@ -732,14 +907,7 @@ const PlanEditModal = ({ mode, row, onCancel, onSave }) => {
             </div>
             <div className="field">
               <label className="req">Fecha programada</label>
-              <div className="input">
-                <Icon name="calendar" size={13} className="ico" />
-                <input type="text"
-                       value={r.fecha}
-                       onChange={e => set('fecha', e.target.value)}
-                       placeholder="dd / mm / yyyy"
-                       style={{flex:1, border:0, outline:0, background:'transparent', font:'inherit', color:'var(--heading)', minWidth: 0}} />
-              </div>
+              <window.DateField value={r.fecha} onChange={v => set('fecha', v)} />
             </div>
           </div>
 
@@ -767,7 +935,7 @@ const PlanEditModal = ({ mode, row, onCancel, onSave }) => {
           </button>
           <div style={{flex:1}}></div>
           <button className="btn primary" onClick={() => onSave(r)}>
-            <Icon name="check" size={13} stroke={2.6} />Guardar cambios
+            <Icon name="check" size={13} stroke={2.6} />Dejar pendiente
           </button>
         </div>
       </div>

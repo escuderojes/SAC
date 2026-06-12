@@ -68,7 +68,6 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
     analisis: '',
   });
 
-  const [plan, setPlan] = React.useState([{ n: 1, desc: '', resp: '', fecha: '' }]);
   const [procedimientos, setProcedimientos] = React.useState([]);
 
   const setField = (k, v) => {
@@ -86,10 +85,6 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
     setForm(prev => ({...prev, [k]: v}));
     setErrors(prev => ({...prev, [k]: ''}));
   };
-  const addAccion = () => setPlan([...plan, { n: plan.length + 1, desc: '', resp: '', fecha: '' }]);
-  const removeAccion = (i) => setPlan(plan.filter((_, j) => j !== i).map((p, k) => ({...p, n: k + 1})));
-  const updateAccion = (i, k, v) => setPlan(plan.map((p, j) => j === i ? {...p, [k]: v} : p));
-
   React.useEffect(() => {
     const year = new Date().getFullYear();
     window.SacApi.getNextCode(campusToCode(form.campus), year)
@@ -102,6 +97,33 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
       .then(rows => setProcedimientos((rows || []).map(p => p.label || `${p.codigo} ${p.nombre}`)))
       .catch(() => setProcedimientos([]));
   }, []);
+
+  const requiredFields = [
+    ['codigo', 'Codigo SAC'],
+    ['campus', 'Campus / filial'],
+    ['area', 'Area o programa'],
+    ['procesoSGC', 'Proceso del SGC'],
+    ['procedimiento', 'Procedimiento'],
+    ['norma', 'Norma asociada'],
+    ['clausula', 'Clausula / requisito'],
+    ['fecha', 'Fecha de registro'],
+    ['fuente', 'Fuente de no conformidad'],
+    ['prioridad', 'Prioridad'],
+    ['respArea', 'Responsable del area'],
+    ['nc', 'Descripcion de la no conformidad'],
+  ];
+
+  const validateRequired = () => {
+    const next = {};
+    requiredFields.forEach(([key, label]) => {
+      if (!String(form[key] || '').trim()) next[key] = `${label} es requerido.`;
+    });
+    if (form.originadorTipo === 'Otro' && !String(form.originadorOtro || '').trim()) {
+      next.originadorOtro = 'Indique quien origina la SAC.';
+    }
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
 
   const payload = () => ({
     code: form.codigo.replace(/^SAC-/, ''),
@@ -127,12 +149,13 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
       responsable: 'No aplica',
       fecha: '',
     },
-    analisis: form.analisis,
-    planAccion: plan,
+    analisis: '',
+    planAccion: [],
   });
 
   const submit = async () => {
     setErrors({});
+    if (!validateRequired()) return;
     try {
       await createSac(payload());
       onSubmit && onSubmit();
@@ -175,7 +198,7 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
           <Field label="Proceso del SGC" required error={errors.procesoSGC}>
             <Select value={form.procesoSGC} placeholder="Seleccionar proceso" options={window.PROCESOS_SGC_LIST} onChange={v => setField('procesoSGC', v)} icon="shield" />
           </Field>
-          <Field label="Procedimiento">
+          <Field label="Procedimiento" required error={errors.procedimiento}>
             <window.Combobox
               value={form.procedimiento}
               placeholder="Seleccionar procedimiento"
@@ -186,16 +209,16 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
               searchPlaceholder="Buscar procedimiento..."
             />
           </Field>
-          <Field label="Norma asociada">
+          <Field label="Norma asociada" required error={errors.norma}>
             <Select value={form.norma} placeholder="Seleccionar norma" options={['ISO 9001:2015', 'ISO 21001:2018', 'Binorma ISO 9001:2015 / ISO 21001:2018', 'ISO 45001:2018']} onChange={v => setField('norma', v)} icon="shield" />
           </Field>
-          <Field label="Clausula / requisito">
+          <Field label="Clausula / requisito" required error={errors.clausula}>
             <input className="input-line" value={form.clausula} onChange={e => setField('clausula', e.target.value)} placeholder="Ej. 8.7.1 / 10.2" />
           </Field>
           <Field label="Fecha de registro" required error={errors.fechaReg || errors.fecha}>
             <window.DateField value={form.fecha} onChange={v => setField('fecha', v)} />
           </Field>
-          <Field label="Originador">
+          <Field label="Originador" error={errors.originadorOtro}>
             <div className="radio-grid" style={{gridTemplateColumns: '1fr', gap: 8}}>
               {['Dirección de la Calidad', 'Otro'].map(opt => (
                 <div key={opt}
@@ -213,7 +236,7 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
                      placeholder="Escriba quien crea la SAC" />
             )}
           </Field>
-          <Field label="Responsable del area" error={errors.responsable}>
+          <Field label="Responsable del area" required error={errors.respArea || errors.responsable}>
             <div className="readonly-stack">
               <div className="input readonly">
                 <Icon name="users" size={13} className="ico" />
@@ -225,7 +248,7 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
               </div>
             </div>
           </Field>
-          <Field label="Prioridad">
+          <Field label="Prioridad" required error={errors.prioridad}>
             <Select value={form.prioridad} placeholder="Seleccionar prioridad" options={['Alta', 'Media', 'Baja']} onChange={v => setField('prioridad', v)} icon="flag" />
           </Field>
           <Field label="Fuente de no conformidad" required span="3" error={errors.fuente}>
@@ -250,53 +273,6 @@ const RegistroSAC = ({ onCancel, onSubmit }) => {
         <div style={{display:'flex', justifyContent:'space-between', fontSize: 11, color:'var(--text-2)', marginTop: -6}}>
           <span><Icon name="alert" size={11} /> Evite opiniones y juicios de valor. Documente solo hechos.</span>
           <span>{form.nc.length} / 2000 caracteres</span>
-        </div>
-      </FormCard>
-
-      <FormCard n="3" title="Accion inmediata (correccion)" sub="Contencion del problema mientras se ejecuta la accion correctiva">
-        <textarea className="input-area" value="No aplica" disabled
-          placeholder="No aplica" />
-        <div className="form-grid" style={{gridTemplateColumns: '2fr 1fr'}}>
-          <Field label="Responsable asignado" required>
-            <div className="input readonly"><span>No aplica</span></div>
-          </Field>
-          <Field label="Fecha" required>
-            <div className="input readonly"><span>No aplica</span></div>
-          </Field>
-        </div>
-      </FormCard>
-
-      <FormCard n="4" title="Analisis de causa raiz" sub="Aplique 5 Por que o Ishikawa para identificar la causa real">
-        <textarea className="input-area" style={{minHeight: 130}} value={form.analisis}
-          onChange={e => setField('analisis', e.target.value)}
-          placeholder="Documente el analisis realizado y la causa raiz identificada." />
-      </FormCard>
-
-      <FormCard n="5" title="Plan de accion" sub="Acciones correctivas que eliminaran la causa raiz identificada"
-        right={<button className="btn sm primary" onClick={addAccion}><Icon name="plus" size={13} />Agregar accion</button>}>
-        <div style={{border: '1px solid var(--border-2)', borderRadius: 8, overflow: 'hidden'}}>
-          <table className="plan-edit-table">
-            <thead>
-              <tr>
-                <th style={{width: 40}}>N</th>
-                <th>Descripcion de la accion</th>
-                <th style={{width: 200}}>Responsable</th>
-                <th style={{width: 140}}>Fecha programada</th>
-                <th style={{width: 40}}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {plan.map((p, i) => (
-                <tr key={i}>
-                  <td style={{textAlign:'center'}}><span className="num-cell">{p.n}</span></td>
-                  <td><textarea rows={2} value={p.desc} onChange={e => updateAccion(i, 'desc', e.target.value)} placeholder="Describa la accion que eliminara la causa raiz..." /></td>
-                  <td><window.ResponsableCombo value={p.resp} onChange={v => updateAccion(i, 'resp', v)} /></td>
-                  <td><input value={p.fecha} onChange={e => updateAccion(i, 'fecha', e.target.value)} placeholder="DD/MM/AAAA" /></td>
-                  <td><button className="rm-btn" title="Eliminar" onClick={() => removeAccion(i)}><Icon name="x" size={14} /></button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </FormCard>
 

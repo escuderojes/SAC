@@ -26,6 +26,14 @@ const normalizeStats = (payload) => payload || {};
 
 const getErrorText = (err) => err?.message || 'Error de red. Verifique que el backend este disponible.';
 
+const filenameFromDisposition = (disposition) => {
+  if (!disposition) return '';
+  const utf = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf) return decodeURIComponent(utf[1].replace(/"/g, ''));
+  const plain = disposition.match(/filename="?([^"]+)"?/i);
+  return plain ? plain[1] : '';
+};
+
 const AppProvider = ({ children }) => {
   const [token, setToken] = React.useState(() => window.localStorage?.getItem('sac_token') || '');
   const [user, setUser] = React.useState(() => {
@@ -92,13 +100,24 @@ const AppProvider = ({ children }) => {
   }, [selectedId]);
 
   React.useEffect(() => {
+    let cancelled = false;
     if (!selectedId) {
       setSelectedSac(null);
-      return;
+      return () => { cancelled = true; };
     }
     const listed = sacs.find(item => item.id === selectedId) || null;
     setSelectedSac(listed);
-    refreshSac(selectedId).catch(() => {});
+    window.SacApi.getSac(selectedId)
+      .then((sac) => {
+        if (cancelled) return;
+        if (sac?.id !== selectedId) return;
+        setSelectedSac(sac);
+        setSacs(prev => prev.map(item => item.id === selectedId ? { ...item, ...sac } : item));
+      })
+      .catch((err) => {
+        if (!cancelled) setError(getErrorText(err));
+      });
+    return () => { cancelled = true; };
   }, [selectedId]);
 
   const createSac = React.useCallback(async (data) => {
@@ -133,15 +152,20 @@ const AppProvider = ({ children }) => {
     }
   }, [filters, loadStats]);
 
-  const exportSac = React.useCallback(async (id, code) => {
+  const exportSac = React.useCallback(async (id, code, area) => {
     setExporting(true);
     setError('');
     try {
-      const blob = await window.SacApi.exportSac(id);
+      const result = await window.SacApi.exportSac(id);
+      const blob = result.blob || result;
+      const backendName = filenameFromDisposition(result.headers?.get?.('content-disposition'));
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
+      const abbr = window.areaAbbr?.(area || '') || '';
+      const cleanCode = String(code || id || '').replace(/^SAC-/, '');
+      const fallbackName = `SAC N ${cleanCode}${abbr ? ' ' + abbr : ''}.docx`;
       link.href = url;
-      link.download = `SAC-${code || id}.docx`;
+      link.download = backendName || fallbackName;
       document.body.appendChild(link);
       link.click();
       link.remove();

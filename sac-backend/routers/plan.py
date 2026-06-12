@@ -18,9 +18,12 @@ def recalc_implementacion(session: Session, sac_id: str) -> None:
     acciones = session.exec(select(SACPlanAccion).where(SACPlanAccion.sac_id == sac_id)).all()
     if not acciones:
         sac.implementacion = 0
+        sac.fecha_compromiso = None
     else:
         completas = sum(1 for a in acciones if a.estado in COMPLETADAS)
         sac.implementacion = round((completas / len(acciones)) * 100)
+        fechas = [a.fecha for a in acciones if a.fecha]
+        sac.fecha_compromiso = max(fechas) if fechas else None
     sac.actualizado_en = utcnow()
     session.add(sac)
 
